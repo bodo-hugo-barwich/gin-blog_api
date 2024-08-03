@@ -1,27 +1,30 @@
 package model
 
 import (
-	//"fmt"
 	"crypto/sha512"
+	"fmt"
 
 	"gorm.io/gorm"
 )
 
 type (
-User struct {
-	gorm.Model
-	Name  string	`json:"name"`
-	Login string	`json:"login"`
-	Email string	`json:"email"`
-	Password string `json:"password"`
-	Articles []Article
-}
+	User struct {
+		gorm.Model
+		Name     string `json:"name"`
+		Login    string `json:"login"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+		Articles []Article
+	}
 
-Login struct {
-	Login string `json:"login"`
-	Password string `json:"password"`
-}
+	Login struct {
+		Login    string `json:"login"`
+		Password string `json:"password"`
+	}
 )
+
+var ENCRYPTIONSALT string = "gin-blog"
+var ENCRYPTIONKEY []byte = []byte("gin-blog")
 
 func (user *User) Auth(login string, password string, salt string) bool {
 	if user.Login != login {
@@ -51,12 +54,12 @@ func EncryptPassword(password string, salt string) string {
 
 	splitIdx := int(length / 2)
 
-	prefix := password[0:splitIdx]
-	suffix := password[splitIdx:length - 1]
+	prefix := password[:splitIdx]
+	suffix := password[splitIdx:]
 	salt = "*" + salt + "*"
 
 	encrypted := sha512.Sum512([]byte(prefix + salt + suffix))
-	encryptedString := string(encrypted[:])
+	encryptedString := fmt.Sprintf("%x", encrypted)
 
 	// Encrypted Passwords are marked with an leading '*'
 	return "*" + encryptedString

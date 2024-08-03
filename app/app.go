@@ -50,6 +50,8 @@ func Start() {
 	controllers.RegisterUserRoutes(router)
 	// Register Article Routes
 	controllers.RegisterArticleRoutes(router)
+	// Register Login Routes
+	controllers.RegisterLoginRoutes(router)
 
 	router.Run(":3000")
 }

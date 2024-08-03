@@ -2,8 +2,8 @@ package controllers
 
 import (
 	"fmt"
-	"strconv"
 	"net/http"
+	"strconv"
 
 	"cxcurrency/model"
 	"github.com/gin-gonic/gin"
@@ -29,7 +29,7 @@ func MigrateArticles(db *gorm.DB) error {
 
 func RegisterArticleRoutes(engine *gin.Engine) {
 
-	// Define routes that interact with the database
+	// Article Routes
 	engine.GET("/articles", DisplayArticles)
 	engine.POST("/articles", CreateArticle)
 }
@@ -125,7 +125,7 @@ func CreateArticle(c *gin.Context) {
 func GetArticlesByUserID(userID uint) []model.Article {
 	var articles []model.Article
 
-	DATABASE.Find(&articles, "user_id = ?", "jinzhu", userID)
+	DATABASE.Find(&articles, "user_id = ?", userID)
 
 	fmt.Printf("Controller 'Articles': GetArticlesByUserID(%d): %#v\n", userID, articles)
 

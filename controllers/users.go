@@ -2,10 +2,12 @@ package controllers
 
 import (
 	"fmt"
-	"strconv"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"cxcurrency/model"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -32,7 +34,7 @@ func MigrateUsers(db *gorm.DB) error {
 
 func RegisterUserRoutes(engine *gin.Engine) {
 
-	// Define routes that interact with the database
+	// User Routes
 	engine.GET("/users", DisplayUsers)
 	engine.GET("/users/:id", DisplayUser)
 	engine.POST("/users", CreateUser)
@@ -94,21 +96,47 @@ func DisplayUser(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, *user)
+	c.JSON(http.StatusOK, *user)
 }
 
 func DisplayUsers(c *gin.Context) {
 	var users []model.User
 
-	DATABASE.Find(&users)
+	DATABASE.Model(&model.User{}).Select("id, name, login, email").Find(&users)
 
 	c.JSON(http.StatusOK, users)
 }
 
 func CreateUser(c *gin.Context) {
+	var admin *model.User
 	var user model.User
+	var err error
+
+	if admin, err = ValidateAuthorizationHeader(c); err != nil {
+		c.JSON(http.StatusUnauthorized, struct {
+			Title            string
+			StatusCode       uint
+			Page             string
+			ErrorMessage     string
+			ErrorDescription string
+		}{
+			"Blog - Error",
+			http.StatusUnprocessableEntity,
+			"users",
+			"Unauthorized",
+			fmt.Sprintf("Authorization failed: %v", err),
+		})
+
+		return
+	}
+
+	fmt.Printf("Controller 'Users': Admin: %#v\n", admin)
 
 	c.BindJSON(&user)
+
+	if !strings.HasPrefix(user.Password, "*") {
+		user.Password = model.EncryptPassword(user.Password, model.ENCRYPTIONSALT)
+	}
 
 	DATABASE.Create(&user)
 
@@ -128,6 +156,24 @@ func GetUserByID(userID uint) (*model.User, error) {
 		match = &users[0]
 	} else {
 		err = fmt.Errorf("User (ID: '%d'): User does not exist", userID)
+	}
+
+	return match, err
+}
+
+func GetUserByLogin(userLogin string) (*model.User, error) {
+	var users []model.User
+	var match *model.User
+	var err error
+
+	DATABASE.Find(&users, "login = ?", userLogin)
+
+	fmt.Printf("Controller 'Users': GetUserByLogin(%s) (Count: '%d'): %#v\n", userLogin, len(users), users)
+
+	if len(users) != 0 {
+		match = &users[0]
+	} else {
+		err = fmt.Errorf("User (Login: '%s'): User does not exist", userLogin)
 	}
 
 	return match, err

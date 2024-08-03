@@ -8,7 +8,7 @@ import (
 
 type Article struct {
 	gorm.Model
-	UserID  uint	`json:"user_id"`
-    Title   string	`json:"title"`
-    Content string `json:"content"`
+	UserID  uint   `json:"user_id"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
 }
