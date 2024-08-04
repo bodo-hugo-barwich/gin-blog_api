@@ -50,19 +50,14 @@ func DisplayUser(c *gin.Context) {
 	fmt.Printf("Controller 'Users': User ID 0: %#v\n", userIdString)
 
 	if userId, err = strconv.ParseUint(userIdString, 10, 64); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, struct {
-			Title            string
-			StatusCode       uint
-			Page             string
-			ErrorMessage     string
-			ErrorDescription string
-		}{
-			"Blog - Error",
-			http.StatusUnprocessableEntity,
-			"users",
-			"Unprocessable Content",
-			"User ID: ID is invalid! Message: " + err.Error(),
-		})
+		c.JSON(http.StatusUnprocessableEntity,
+			APIErrorResponse{
+				"Blog - Error",
+				http.StatusUnprocessableEntity,
+				"users",
+				"Unprocessable Content",
+				"User ID: ID is invalid! Message: " + err.Error(),
+			})
 
 		return
 	}
@@ -79,19 +74,14 @@ func DisplayUser(c *gin.Context) {
 			desc = err.Error()
 		}
 
-		c.JSON(http.StatusNotFound, struct {
-			Title            string
-			StatusCode       uint
-			Page             string
-			ErrorMessage     string
-			ErrorDescription string
-		}{
-			"Blog - Error",
-			http.StatusNotFound,
-			"users",
-			"Not Found",
-			desc,
-		})
+		c.JSON(http.StatusNotFound,
+			APIErrorResponse{
+				"Blog - Error",
+				http.StatusNotFound,
+				"users",
+				"Not Found",
+				desc,
+			})
 
 		return
 	}
@@ -113,19 +103,14 @@ func CreateUser(c *gin.Context) {
 	var err error
 
 	if admin, err = ValidateAuthorizationHeader(c); err != nil {
-		c.JSON(http.StatusUnauthorized, struct {
-			Title            string
-			StatusCode       uint
-			Page             string
-			ErrorMessage     string
-			ErrorDescription string
-		}{
-			"Blog - Error",
-			http.StatusUnprocessableEntity,
-			"users",
-			"Unauthorized",
-			fmt.Sprintf("Authorization failed: %v", err),
-		})
+		c.JSON(http.StatusUnauthorized,
+			APIErrorResponse{
+				"Blog - Error",
+				http.StatusUnauthorized,
+				"users",
+				"Unauthorized",
+				fmt.Sprintf("Authorization failed: %v", err),
+			})
 
 		return
 	}

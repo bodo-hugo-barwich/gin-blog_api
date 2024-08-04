@@ -43,19 +43,14 @@ func DisplayArticles(c *gin.Context) {
 
 	if userIdString != "" {
 		if userId, err = strconv.Atoi(userIdString); err != nil {
-			c.JSON(http.StatusUnprocessableEntity, struct {
-				Title            string
-				StatusCode       uint
-				Page             string
-				ErrorMessage     string
-				ErrorDescription string
-			}{
-				"Blog - Error",
-				http.StatusUnprocessableEntity,
-				"users",
-				"Unprocessable Content",
-				"User ID: ID is invalid! Message: " + err.Error(),
-			})
+			c.JSON(http.StatusUnprocessableEntity,
+				APIErrorResponse{
+					"Blog - Error",
+					http.StatusUnprocessableEntity,
+					"users",
+					"Unprocessable Content",
+					"User ID: ID is invalid! Message: " + err.Error(),
+				})
 
 			return
 		}
@@ -65,51 +60,61 @@ func DisplayArticles(c *gin.Context) {
 		DATABASE.Find(&articles)
 	}
 
-	c.JSON(200, articles)
+	c.JSON(http.StatusOK, articles)
 }
 
 func CreateArticle(c *gin.Context) {
 	var article model.Article
+	var editor *model.User
 	var user *model.User
 	var err error
 
-	fmt.Println("Controller 'Articles': CreateArticles go ...\n")
+	fmt.Println("Controller 'Articles': CreateArticles go ...")
+
+	if editor, err = ValidateAuthorizationHeader(c); err != nil {
+		c.JSON(http.StatusUnauthorized,
+			APIErrorResponse{
+				"Blog - Error",
+				http.StatusUnauthorized,
+				"users",
+				"Unauthorized",
+				fmt.Sprintf("Authorization failed: %v", err),
+			})
+
+		return
+	}
+
+	fmt.Printf("Controller 'Articles': Editor: %#v\n", editor)
 
 	c.BindJSON(&article)
 
 	fmt.Printf("Model 'Article': %#v\n", article)
 
-	if article.UserID < 1 {
-		c.JSON(http.StatusUnprocessableEntity, struct {
-			Title            string
-			StatusCode       uint
-			Page             string
-			ErrorMessage     string
-			ErrorDescription string
-		}{
-			"Blog - Error",
-			http.StatusUnprocessableEntity,
-			"articles",
-			"Unprocessable Content",
-			"Model 'Article': User ID is missing!",
-		})
+	if article.UserID == 0 {
+		article.UserID = editor.ID
+	}
+
+	if article.UserID == 0 {
+		c.JSON(http.StatusUnprocessableEntity,
+			APIErrorResponse{
+				"Blog - Error",
+				http.StatusUnprocessableEntity,
+				"articles",
+				"Unprocessable Content",
+				"Model 'Article': User ID is missing!",
+			})
 
 		return
 	} else {
 		if user, err = GetUserByID(article.UserID); err != nil {
-			c.JSON(http.StatusNotFound, struct {
-				Title            string
-				StatusCode       uint
-				Page             string
-				ErrorMessage     string
-				ErrorDescription string
-			}{
-				"Blog - Error",
-				http.StatusNotFound,
-				"articles",
-				"Not Found",
-				err.Error(),
-			})
+			c.JSON(http.StatusNotFound,
+				APIErrorResponse{
+					"Blog - Error",
+					http.StatusNotFound,
+					"articles",
+					"Not Found",
+					err.Error(),
+				})
 
 			return
 		}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"cxcurrency/model"
 	"github.com/gin-gonic/gin"
@@ -39,37 +40,27 @@ func DispatchLogin(c *gin.Context) {
 	//fmt.Printf("Controller 'Login': Login: %#v\n", userLogin)
 
 	if userLogin.Login == "" {
-		c.JSON(http.StatusUnprocessableEntity, struct {
-			Title            string
-			StatusCode       uint
-			Page             string
-			ErrorMessage     string
-			ErrorDescription string
-		}{
-			"Blog - Error",
-			http.StatusUnprocessableEntity,
-			"login",
-			"Unprocessable Content",
-			"User Login: Login Data is incomplete!",
-		})
+		c.JSON(http.StatusUnprocessableEntity,
+			APIErrorResponse{
+				"Blog - Error",
+				http.StatusUnprocessableEntity,
+				"login",
+				"Unprocessable Content",
+				"User Login: Login Data is incomplete!",
+			})
 
 		return
 	}
 
 	if user, err = GetUserByLogin(userLogin.Login); user == nil || err != nil {
-		c.JSON(http.StatusUnauthorized, struct {
-			Title            string
-			StatusCode       uint
-			Page             string
-			ErrorMessage     string
-			ErrorDescription string
-		}{
-			"Blog - Error",
-			http.StatusUnprocessableEntity,
-			"login",
-			"Unauthorized",
-			"User Login: Login failed!",
-		})
+		c.JSON(http.StatusUnauthorized,
+			APIErrorResponse{
+				"Blog - Error",
+				http.StatusUnprocessableEntity,
+				"login",
+				"Unauthorized",
+				"User Login: Login failed!",
+			})
 
 		return
 	}
@@ -77,47 +68,43 @@ func DispatchLogin(c *gin.Context) {
 	//fmt.Printf("Controller 'Login': User: %#v; Login: %#v; \n", user, userLogin)
 
 	if user.AuthLogin(&userLogin, model.ENCRYPTIONSALT) {
-		// Create a new JWT
+		// Session Validity
+		sessionStart := time.Now()
+		sessionMinutes, _ := time.ParseDuration(fmt.Sprintf("%dm", SESSIONEXPIRY))
+		sessionExpiry := time.Now().Add(sessionMinutes)
 
+		fmt.Printf("Controller 'Login': Session: iat: '%#v'; exp: '%#v'\n", time.Now().Unix(), time.Now().Add(sessionMinutes).Unix())
+
+		// Create a new JWT
 		token := jwt.NewWithClaims(jwt.SigningMethodHS512,
 			jwt.MapClaims{
 				"iss": "Blog",
-				"sub": struct {
-					ID    uint
-					Login string
-				}{user.ID, user.Login},
+				"sub": AuthorizationSubject{user.ID, user.Login},
+				"iat": sessionStart.Unix(),
+				"exp": sessionExpiry.Unix(),
 			})
 		tokenString, err := token.SignedString(model.ENCRYPTIONKEY)
 
 		if err == nil {
-			c.JSON(http.StatusOK, struct {
-				Title      string
-				StatusCode uint
-				Page       string
-				Message    string
-				Token      string
-			}{
-				"Blog - Success",
-				http.StatusOK,
-				"login",
-				"OK",
-				tokenString,
-			})
+			c.JSON(http.StatusOK,
+				LoginSuccess{
+					"Blog - Success",
+					http.StatusOK,
+					"login",
+					"OK",
+					tokenString,
+					sessionExpiry.Format(time.RFC3339),
+				})
 		}
 	} else {
-		c.JSON(http.StatusUnauthorized, struct {
-			Title            string
-			StatusCode       uint
-			Page             string
-			ErrorMessage     string
-			ErrorDescription string
-		}{
-			"Blog - Error",
-			http.StatusUnprocessableEntity,
-			"login",
-			"Unauthorized",
-			"User Login: Login failed!",
-		})
+		c.JSON(http.StatusUnauthorized,
+			APIErrorResponse{
+				"Blog - Error",
+				http.StatusUnprocessableEntity,
+				"login",
+				"Unauthorized",
+				"User Login: Login failed!",
+			})
 	}
 }
 
@@ -147,15 +134,40 @@ func ValidateAuthorizationHeader(c *gin.Context) (*model.User, error) {
 
 func ValidateToken(tokenString string) (*model.User, error) {
 	var user *model.User
+	var err error
 
 	token, err := jwt.Parse(tokenString, GetEncryptionKey)
 	if err != nil {
 		return nil, fmt.Errorf("Authorization Token: Token is invalid! Message: %v", err)
 	}
 
+	fmt.Printf("Controller 'Login': Parsed Token: %#v\n", token)
+
 	if tokenData, ok := token.Claims.(jwt.MapClaims); ok {
 		fmt.Printf("Controller 'Login': Token Data: %#v\n", tokenData)
 
+		if subject, ok := tokenData["sub"]; ok {
+			fmt.Printf("Controller 'Login': sub: %#v\n", subject)
+
+			authSubject := NewAuthorizationSubjectFromInterface(subject.(map[string]interface{}))
+
+			fmt.Printf("Controller 'Login': auth sub: %#v\n", authSubject)
+
+			if user, err = GetUserByID(authSubject.ID); user == nil || err != nil {
+				if err == nil {
+					err = errors.New("Authorization Token: User unauthorized!")
+				}
+
+				return nil, err
+			}
+
+			// User Data Integrity Check
+			if user.Login != authSubject.Login {
+				return nil, errors.New("Authorization Token: User unauthorized!")
+			}
+		} else {
+			return nil, errors.New("Authorization Token: Payload invalid!")
+		}
 	} else {
 		return nil, errors.New("Authorization Token: Payload invalid!")
 	}
@@ -164,8 +176,6 @@ func ValidateToken(tokenString string) (*model.User, error) {
 }
 
 func GetEncryptionKey(token *jwt.Token) (interface{}, error) {
-	fmt.Printf("Controller 'Login': Token dump: %#v\n", token)
-
 	// Don't forget to validate the alg is what you expect:
 	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 		return nil, fmt.Errorf("Authorization Token: Token is invalid! Message: Unexpected signing method: %v", token.Header["alg"])
