@@ -41,6 +41,10 @@ func DisplayArticles(c *gin.Context) {
 
 	userIdString := c.Params.ByName("userId")
 
+	if userIdString == "" {
+		userIdString = c.Params.ByName("user_id")
+	}
+
 	if userIdString != "" {
 		if userId, err = strconv.Atoi(userIdString); err != nil {
 			c.JSON(http.StatusUnprocessableEntity,
@@ -60,7 +64,38 @@ func DisplayArticles(c *gin.Context) {
 		DATABASE.Find(&articles)
 	}
 
-	c.JSON(http.StatusOK, articles)
+	var displayedArticles []model.DisplayedArticle
+	var articleMap map[uint]*model.Article = make(map[uint]*model.Article)
+	var userMap map[uint]*model.User = make(map[uint]*model.User)
+	var userIDs []uint
+
+	for idx, article := range articles {
+		displayedArticles = append(displayedArticles, model.NewDisplayedArticle(&article))
+		articleMap[article.ID] = &articles[idx]
+		userMap[article.UserID] = nil
+	}
+
+	for userID, _ := range userMap {
+		userIDs = append(userIDs, userID)
+	}
+
+	userRes := GetUsersByIDs(userIDs)
+
+	if userRes != nil {
+		for idx, user := range *userRes {
+			userMap[user.ID] = &(*userRes)[idx]
+		}
+	}
+
+	for idx, displayed := range displayedArticles {
+		article := articleMap[displayed.ID]
+
+		if user, ok := userMap[article.UserID]; ok {
+			displayedArticles[idx].Author = user.Name
+		}
+	}
+
+	c.JSON(http.StatusOK, displayedArticles)
 }
 
 func CreateArticle(c *gin.Context) {

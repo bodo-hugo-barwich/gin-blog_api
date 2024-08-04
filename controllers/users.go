@@ -139,21 +139,32 @@ func CreateUser(c *gin.Context) {
 }
 
 func GetUserByID(userID uint) (*model.User, error) {
-	var users []model.User
 	var match *model.User
 	var err error
 
-	DATABASE.Find(&users, []uint{userID})
+	userRes := GetUsersByIDs([]uint{userID})
 
-	fmt.Printf("Controller 'Users': GetUserByID(%d) (Count: '%d'): %#v\n", userID, len(users), users)
+	if userRes == nil {
+		return nil, fmt.Errorf("User (ID: '%d'): User does not exist!", userID)
+	}
 
-	if len(users) != 0 {
-		match = &users[0]
+	fmt.Printf("Controller 'Users': GetUserByID(%d) (Count: '%d'): %#v\n", userID, len(*userRes), *userRes)
+
+	if len(*userRes) != 0 {
+		match = &(*userRes)[0]
 	} else {
-		err = fmt.Errorf("User (ID: '%d'): User does not exist", userID)
+		err = fmt.Errorf("User (ID: '%d'): User does not exist!", userID)
 	}
 
 	return match, err
+}
+
+func GetUsersByIDs(userIDs []uint) *[]model.User {
+	var users []model.User
+
+	DATABASE.Find(&users, userIDs)
+
+	return &users
 }
 
 func GetUserByLogin(userLogin string) (*model.User, error) {
