@@ -108,6 +108,34 @@ func DispatchLogin(c *gin.Context) {
 	}
 }
 
+func AuthorizeRequest() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var authUser *model.User
+		var err error
+
+		if authUser, err = ValidateAuthorizationHeader(c); authUser == nil || err != nil {
+			if err == nil {
+				err = errors.New("Authorization Token: User unauthorized!")
+			}
+
+			c.JSON(http.StatusUnauthorized,
+				APIErrorResponse{
+					"Blog - Error",
+					http.StatusUnauthorized,
+					"users",
+					"Unauthorized",
+					fmt.Sprintf("Authorization failed: %v", err),
+				})
+
+			return
+		}
+
+		c.Set("AuthUser", authUser)
+
+		c.Next()
+	}
+}
+
 func ValidateAuthorizationHeader(c *gin.Context) (*model.User, error) {
 	var tokenString string
 
@@ -136,6 +164,8 @@ func ValidateToken(tokenString string) (*model.User, error) {
 	var user *model.User
 	var err error
 
+	fmt.Println("Controller 'Login': ValidateToken() go ...")
+
 	token, err := jwt.Parse(tokenString, GetEncryptionKey)
 	if err != nil {
 		return nil, fmt.Errorf("Authorization Token: Token is invalid! Message: %v", err)
@@ -149,7 +179,7 @@ func ValidateToken(tokenString string) (*model.User, error) {
 		if subject, ok := tokenData["sub"]; ok {
 			fmt.Printf("Controller 'Login': sub: %#v\n", subject)
 
-			authSubject := NewAuthorizationSubjectFromInterface(subject.(map[string]interface{}))
+			authSubject := NewAuthorizationSubject(subject.(map[string]interface{}))
 
 			fmt.Printf("Controller 'Login': auth sub: %#v\n", authSubject)
 

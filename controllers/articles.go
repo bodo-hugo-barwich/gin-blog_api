@@ -31,7 +31,7 @@ func RegisterArticleRoutes(engine *gin.Engine) {
 
 	// Article Routes
 	engine.GET("/articles", DisplayArticles)
-	engine.POST("/articles", CreateArticle)
+	engine.POST("/articles", AuthorizeRequest(), CreateArticle)
 }
 
 func DisplayArticles(c *gin.Context) {
@@ -65,33 +65,24 @@ func DisplayArticles(c *gin.Context) {
 
 func CreateArticle(c *gin.Context) {
 	var article model.Article
-	var editor *model.User
 	var user *model.User
 	var err error
 
-	fmt.Println("Controller 'Articles': CreateArticles go ...")
+	editor, ok := c.Get("AuthUser")
 
-	if editor, err = ValidateAuthorizationHeader(c); err != nil {
-		c.JSON(http.StatusUnauthorized,
-			APIErrorResponse{
-				"Blog - Error",
-				http.StatusUnauthorized,
-				"users",
-				"Unauthorized",
-				fmt.Sprintf("Authorization failed: %v", err),
-			})
+	fmt.Printf("Controller 'Articles': Editor: %#v; ok: %#v\n", editor, ok)
 
+	if editor == nil || !ok {
+		// Exit on missing Authorized User
 		return
 	}
-
-	fmt.Printf("Controller 'Articles': Editor: %#v\n", editor)
 
 	c.BindJSON(&article)
 
 	fmt.Printf("Model 'Article': %#v\n", article)
 
 	if article.UserID == 0 {
-		article.UserID = editor.ID
+		article.UserID = editor.(*model.User).ID
 	}
 
 	if article.UserID == 0 {
@@ -123,7 +114,11 @@ func CreateArticle(c *gin.Context) {
 	if user != nil {
 		DATABASE.Create(&article)
 
-		c.JSON(http.StatusOK, article)
+		displayed := model.NewDisplayedArticle(&article)
+
+		displayed.Author = user.Name
+
+		c.JSON(http.StatusOK, displayed)
 	}
 }
 

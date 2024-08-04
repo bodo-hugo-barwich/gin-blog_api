@@ -31,7 +31,7 @@ type (
 // Validity of a Login Session
 var SESSIONEXPIRY uint = 20
 
-func NewAuthorizationSubjectFromInterface(subject map[string]interface{}) AuthorizationSubject {
+func NewAuthorizationSubject(subject map[string]interface{}) AuthorizationSubject {
 	var authSubject AuthorizationSubject = AuthorizationSubject{0, ""}
 
 	switch id := subject["ID"].(type) {

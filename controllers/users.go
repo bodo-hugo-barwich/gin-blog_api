@@ -35,15 +35,24 @@ func MigrateUsers(db *gorm.DB) error {
 func RegisterUserRoutes(engine *gin.Engine) {
 
 	// User Routes
-	engine.GET("/users", DisplayUsers)
-	engine.GET("/users/:id", DisplayUser)
-	engine.POST("/users", CreateUser)
+	engine.GET("/users", AuthorizeRequest(), DisplayUsers)
+	engine.GET("/users/:id", AuthorizeRequest(), DisplayUser)
+	engine.POST("/users", AuthorizeRequest(), CreateUser)
 }
 
 func DisplayUser(c *gin.Context) {
 	var user *model.User
 	var userId uint64
 	var err error
+
+	admin, ok := c.Get("AuthUser")
+
+	fmt.Printf("Controller 'Users': Admin: %#v; ok: %#v\n", admin, ok)
+
+	if admin == nil || !ok {
+		// Exit on missing Authorized User
+		return
+	}
 
 	userIdString := c.Params.ByName("id")
 
@@ -92,30 +101,31 @@ func DisplayUser(c *gin.Context) {
 func DisplayUsers(c *gin.Context) {
 	var users []model.User
 
+	admin, ok := c.Get("AuthUser")
+
+	fmt.Printf("Controller 'Users': Admin: %#v; ok: %#v\n", admin, ok)
+
+	if admin == nil || !ok {
+		// Exit on missing Authorized User
+		return
+	}
+
 	DATABASE.Model(&model.User{}).Select("id, name, login, email").Find(&users)
 
 	c.JSON(http.StatusOK, users)
 }
 
 func CreateUser(c *gin.Context) {
-	var admin *model.User
 	var user model.User
-	var err error
 
-	if admin, err = ValidateAuthorizationHeader(c); err != nil {
-		c.JSON(http.StatusUnauthorized,
-			APIErrorResponse{
-				"Blog - Error",
-				http.StatusUnauthorized,
-				"users",
-				"Unauthorized",
-				fmt.Sprintf("Authorization failed: %v", err),
-			})
+	admin, ok := c.Get("AuthUser")
 
+	fmt.Printf("Controller 'Users': Admin: %#v; ok: %#v\n", admin, ok)
+
+	if admin == nil || !ok {
+		// Exit on missing Authorized User
 		return
 	}
-
-	fmt.Printf("Controller 'Users': Admin: %#v\n", admin)
 
 	c.BindJSON(&user)
 
