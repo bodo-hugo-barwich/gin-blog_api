@@ -2,7 +2,7 @@ package main
 
 import (
 
-	"cxcurrency/app"
+	"gin-blog/app"
 )
 
 func main() {

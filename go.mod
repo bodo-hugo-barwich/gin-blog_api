@@ -1,14 +1,14 @@
-module cxcurrency
+module gin-blog
 
 go 1.15
 
-replace cxcurrency => ./
+replace gin-blog => ./
 
-replace cxcurrency/app => ./app
+replace gin-blog/app => ./app
 
-replace cxcurrency/controllers => ./controllers
+replace gin-blog/controllers => ./controllers
 
-replace cxcurrency/model => ./model
+replace gin-blog/model => ./model
 
 require (
 	github.com/client9/misspell v0.3.4 // indirect

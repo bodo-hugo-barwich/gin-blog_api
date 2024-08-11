@@ -6,10 +6,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"cxcurrency/controllers"
+
+	"gin-blog/controllers"
 )
 
 var DATABASE *gorm.DB
+
 //var err error
 
 func ConnectDatabase() (*gorm.DB, error) {
@@ -37,13 +39,7 @@ func InitializeDatabase(db *gorm.DB) error {
 	return err
 }
 
-func Start() {
-
-	// Create the global Database Connection
-	DATABASE, _ = ConnectDatabase()
-
-	InitializeDatabase(DATABASE)
-
+func RegisterRoutes() *gin.Engine {
 	router := gin.Default()
 
 	// Register User Routes
@@ -52,6 +48,18 @@ func Start() {
 	controllers.RegisterArticleRoutes(router)
 	// Register Login Routes
 	controllers.RegisterLoginRoutes(router)
+
+	return router
+}
+
+func Start() {
+
+	// Create the global Database Connection
+	DATABASE, _ = ConnectDatabase()
+
+	InitializeDatabase(DATABASE)
+
+	router := RegisterRoutes()
 
 	router.Run(":3000")
 }

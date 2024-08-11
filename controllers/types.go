@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"fmt"
+
+	"gorm.io/gorm"
 )
 
 type (
@@ -27,6 +29,9 @@ type (
 		Login string
 	}
 )
+
+// Global Database Connection
+var DATABASE *gorm.DB
 
 // Validity of a Login Session
 var SESSIONEXPIRY uint = 20

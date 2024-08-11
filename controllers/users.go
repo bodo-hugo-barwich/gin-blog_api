@@ -6,19 +6,15 @@ import (
 	"strconv"
 	"strings"
 
-	"cxcurrency/model"
-
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-)
 
-var DATABASE *gorm.DB
+	"gin-blog/model"
+)
 
 func MigrateUsers(db *gorm.DB) error {
 
 	if DATABASE == nil {
-
-		//Copy reference to global database
 		DATABASE = db
 	}
 
@@ -128,6 +124,10 @@ func CreateUser(c *gin.Context) {
 	}
 
 	c.BindJSON(&user)
+
+	if user.Slug == "" {
+		user.Slug = user.Name
+	}
 
 	if !strings.HasPrefix(user.Password, "*") {
 		user.Password = model.EncryptPassword(user.Password, model.ENCRYPTIONSALT)

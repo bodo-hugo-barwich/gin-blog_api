@@ -1,13 +1,15 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
-	"cxcurrency/model"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
+	"gin-blog/model"
 )
 
 func MigrateArticles(db *gorm.DB) error {
@@ -17,7 +19,7 @@ func MigrateArticles(db *gorm.DB) error {
 		DATABASE = db
 	}
 
-	// Automigrate the User model
+	// Automigrate the Article model
 	err := db.AutoMigrate(&model.Article{})
 
 	if err != nil {
@@ -31,7 +33,74 @@ func RegisterArticleRoutes(engine *gin.Engine) {
 
 	// Article Routes
 	engine.GET("/articles", DisplayArticles)
+	engine.GET("/articles/:id", DisplayArticle)
+	engine.PUT("/articles/:id", AuthorizeRequest(), UpdateArticle)
 	engine.POST("/articles", AuthorizeRequest(), CreateArticle)
+}
+
+func DisplayArticle(c *gin.Context) {
+	var article *model.Article
+	var displayed model.DisplayedArticle
+	var user *model.User
+	var articleId uint64
+	var err error
+
+	articleIdString := c.Params.ByName("id")
+
+	fmt.Printf("Controller 'Articles': Article ID 0: %#v\n", articleIdString)
+
+	if articleId, err = strconv.ParseUint(articleIdString, 10, 64); err != nil {
+		c.JSON(http.StatusUnprocessableEntity,
+			APIErrorResponse{
+				"Blog - Error",
+				http.StatusUnprocessableEntity,
+				"articles",
+				"Unprocessable Content",
+				"Article ID: ID is invalid! Message: " + err.Error(),
+			})
+
+		return
+	}
+
+	fmt.Printf("Controller 'Articles': Article ID 1: %#v\n", articleId)
+
+	if article, err = GetArticleByID(uint(articleId)); article == nil || err != nil {
+
+		fmt.Printf("Controller 'Articles': Article (ID '%d'): %#v; Error: %#v\n", articleId, article, err)
+
+		desc := fmt.Sprintf("Article (ID: '%d'): Article does not exist", articleId)
+
+		if err != nil {
+			desc = err.Error()
+		}
+
+		c.JSON(http.StatusNotFound,
+			APIErrorResponse{
+				"Blog - Error",
+				http.StatusNotFound,
+				"articles",
+				"Not Found",
+				desc,
+			})
+
+		return
+	}
+
+	displayed = model.NewDisplayedArticle(article)
+
+	if user, err = GetUserByID(article.UserID); user == nil || err != nil {
+
+		fmt.Printf("Controller 'Articles': User (ID '%d'): %#v; Error: %#v\n", article.UserID, user, err)
+
+		displayed.Author = "Unknown"
+	}
+
+	if user != nil {
+		displayed.Author = user.Name
+		displayed.AuthorSlug = user.Slug
+	}
+
+	c.JSON(http.StatusOK, displayed)
 }
 
 func DisplayArticles(c *gin.Context) {
@@ -114,6 +183,10 @@ func CreateArticle(c *gin.Context) {
 
 	c.BindJSON(&article)
 
+	if article.Slug == "" {
+		article.Slug = article.Title
+	}
+
 	fmt.Printf("Model 'Article': %#v\n", article)
 
 	if article.UserID == 0 {
@@ -149,12 +222,142 @@ func CreateArticle(c *gin.Context) {
 	if user != nil {
 		DATABASE.Create(&article)
 
-		displayed := model.NewDisplayedArticle(&article)
-
-		displayed.Author = user.Name
-
-		c.JSON(http.StatusOK, displayed)
+		c.JSON(http.StatusOK, article)
 	}
+}
+
+func UpdateArticle(c *gin.Context) {
+	var article *model.Article
+	var updated model.Article
+	var user *model.User
+	var articleId uint64
+	var err error
+
+	editor, ok := c.Get("AuthUser")
+
+	fmt.Printf("Controller 'Articles': Editor: %#v; ok: %#v\n", editor, ok)
+
+	if editor == nil || !ok {
+		// Exit on missing Authorized User
+		return
+	}
+
+	c.BindJSON(&updated)
+
+	fmt.Printf("Model 'Article': %#v\n", updated)
+
+	articleIdString := c.Params.ByName("id")
+
+	fmt.Printf("Controller 'Articles': Article ID 0: %#v\n", articleIdString)
+
+	if articleId, err = strconv.ParseUint(articleIdString, 10, 64); err != nil {
+		c.JSON(http.StatusUnprocessableEntity,
+			APIErrorResponse{
+				"Blog - Error",
+				http.StatusUnprocessableEntity,
+				"articles",
+				"Unprocessable Content",
+				"Article ID: ID is invalid! Message: " + err.Error(),
+			})
+
+		return
+	}
+
+	fmt.Printf("Controller 'Articles': Article ID 1: %#v\n", articleId)
+
+	if article, err = GetArticleByID(uint(articleId)); article == nil || err != nil {
+
+		fmt.Printf("Controller 'Articles': Article (ID '%d'): %#v; Error: %#v\n", articleId, article, err)
+
+		desc := fmt.Sprintf("Article (ID: '%d'): Article does not exist", articleId)
+
+		if err != nil {
+			desc = err.Error()
+		}
+
+		c.JSON(http.StatusNotFound,
+			APIErrorResponse{
+				"Blog - Error",
+				http.StatusNotFound,
+				"articles",
+				"",
+				desc,
+			})
+
+		return
+	}
+
+	if updated.UserID != 0 {
+		if user, err = GetUserByID(updated.UserID); user == nil || err != nil {
+			if err == nil {
+				err = errors.New("User ID: User does not exist!")
+			}
+
+			c.JSON(http.StatusUnprocessableEntity,
+				APIErrorResponse{
+					"Blog - Error",
+					http.StatusUnprocessableEntity,
+					"articles",
+					"Unprocessable Content",
+					err.Error(),
+				})
+
+			return
+		}
+	}
+
+	article.Update(&updated)
+
+	DATABASE.Save(&article)
+
+	c.JSON(http.StatusOK, article)
+}
+
+func GetArticleByID(articleID uint) (*model.Article, error) {
+	var match *model.Article
+	var err error
+
+	articleRes := GetArticlesByIDs([]uint{articleID})
+
+	if articleRes == nil {
+		return nil, fmt.Errorf("Article (ID: '%d'): Article does not exist!", articleID)
+	}
+
+	fmt.Printf("Controller 'Articles': GetArticleByID(%d) (Count: '%d'): %#v\n", articleID, len(*articleRes), *articleRes)
+
+	if len(*articleRes) != 0 {
+		match = &(*articleRes)[0]
+	} else {
+		err = fmt.Errorf("Article (ID: '%d'): Article does not exist!", articleID)
+	}
+
+	return match, err
+}
+
+func GetArticleBySlug(articleSlug string) (*model.Article, error) {
+	var articles []model.Article
+	var match *model.Article
+	var err error
+
+	DATABASE.Find(&articles, "slug = ?", articleSlug)
+
+	fmt.Printf("Controller 'Articles': GetArticleBySlug('%s') (Count: '%d'):: %#v\n", articleSlug, len(articles), articles)
+
+	if len(articles) != 0 {
+		match = &articles[0]
+	} else {
+		err = fmt.Errorf("Article (Slug: '%s'): Article does not exist!", articleSlug)
+	}
+
+	return match, err
+}
+
+func GetArticlesByIDs(articleIDs []uint) *[]model.Article {
+	var articles []model.Article
+
+	DATABASE.Find(&articles, articleIDs)
+
+	return &articles
 }
 
 func GetArticlesByUserID(userID uint) []model.Article {

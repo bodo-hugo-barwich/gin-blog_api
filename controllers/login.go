@@ -7,9 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"cxcurrency/model"
 	"github.com/gin-gonic/gin"
 	jwt "github.com/golang-jwt/jwt/v5"
+
+	"gin-blog/model"
 )
 
 func RegisterLoginRoutes(engine *gin.Engine) {
