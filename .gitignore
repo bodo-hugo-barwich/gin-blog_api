@@ -1,1 +1,11 @@
-/docker-compose.yml
+#Exclude Project Files
+.project
+*.adoc
+Cargo.lock
+
+#Exclude Local Configurations
+docker-compose.yml
+.env*
+
+#Exclude Build Files
+main

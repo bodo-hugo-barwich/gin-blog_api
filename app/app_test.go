@@ -7,14 +7,30 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+
 	"gin-blog/model"
 )
 
 func TestArticleRoutes(t *testing.T) {
+	var config AppConfig
+	var db *gorm.DB
+	var err error
 
-	db, _ := ConnectDatabase()
+	gin.SetMode("test")
 
-	InitializeDatabase(db)
+	if config, err = ReadConfigFile(); err != nil {
+		t.Fatalf("Application Configuration: Configuration is missing! Message: %#v", err)
+	}
+
+	if db, err = ConnectDatabase(&config); err != nil {
+		t.Fatalf("Database Connection: Connection failed! Message: %#v", err)
+	}
+
+	if err = InitializeDatabase(db); err != nil {
+		t.Fatalf("Database Setup: Setup failed! Message: %#v", err)
+	}
 
 	router := RegisterRoutes()
 
@@ -30,7 +46,7 @@ func TestArticleRoutes(t *testing.T) {
 
 	var displayedArticles []model.DisplayedArticle
 
-	err := json.Unmarshal(res.Body.Bytes(), &displayedArticles)
+	err = json.Unmarshal(res.Body.Bytes(), &displayedArticles)
 
 	if err != nil {
 		t.Fatalf("URL '%s': Response is invalid JSON! Message: %#v", req.RequestURI, err)

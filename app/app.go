@@ -1,7 +1,7 @@
 package app
 
 import (
-	//"fmt"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
@@ -14,9 +14,10 @@ var DATABASE *gorm.DB
 
 //var err error
 
-func ConnectDatabase() (*gorm.DB, error) {
+func ConnectDatabase(config *AppConfig) (*gorm.DB, error) {
 	// Connect to the PostgreSQL database
-	dsn := "host=db user=cxcurrency password=secret dbname=cxcurrency sslmode=disable"
+	dsn := fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable",
+		config.DB.Host, config.DB.Name, config.DB.User, config.DB.Password)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
@@ -54,8 +55,24 @@ func RegisterRoutes() *gin.Engine {
 
 func Start() {
 
+	config, err := ReadConfigFile()
+
+	fmt.Printf("App - Start(): config: %#v; error: %#v\n", config, err)
+
+	if err != nil {
+		fmt.Printf("App - Start(): Config is missing! Message: %v\n", err)
+
+		return
+	}
+
 	// Create the global Database Connection
-	DATABASE, _ = ConnectDatabase()
+	DATABASE, err = ConnectDatabase(&config)
+
+	if err != nil {
+		fmt.Printf("App - Start(): Database Connection failed! Message: %v\n", err)
+
+		return
+	}
 
 	InitializeDatabase(DATABASE)
 
