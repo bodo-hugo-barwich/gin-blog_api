@@ -5,7 +5,8 @@ Cargo.lock
 
 #Exclude Local Configurations
 docker-compose.yml
-.env*
+.env
+.env.*
 
 #Exclude Build Files
 main
