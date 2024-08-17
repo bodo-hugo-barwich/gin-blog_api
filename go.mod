@@ -6,6 +6,8 @@ replace gin-blog => ./
 
 replace gin-blog/app => ./app
 
+replace gin-blog/config => ./config
+
 replace gin-blog/controllers => ./controllers
 
 replace gin-blog/model => ./model

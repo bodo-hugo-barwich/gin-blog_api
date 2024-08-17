@@ -7,6 +7,14 @@ import (
 )
 
 type (
+	HomeSuccess struct {
+		Title       string
+		StatusCode  uint
+		Page        string
+		Message     string
+		Description string
+	}
+
 	APIErrorResponse struct {
 		Title            string
 		StatusCode       uint
@@ -30,10 +38,16 @@ type (
 	}
 )
 
-// Global Database Connection
+// PROJECT - Project Name
+var PROJECT string = ""
+
+// PROJECTDESCRIPTION - The Project Description
+var PROJECTDESCRIPTION string = ""
+
+// DATABASE - Global Database Connection
 var DATABASE *gorm.DB
 
-// Validity of a Login Session
+// SESSIONEXPIRY - Validity of a Login Session
 var SESSIONEXPIRY uint = 20
 
 func NewAuthorizationSubject(subject map[string]interface{}) AuthorizationSubject {

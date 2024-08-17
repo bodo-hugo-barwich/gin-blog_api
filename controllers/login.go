@@ -10,12 +10,18 @@ import (
 	"github.com/gin-gonic/gin"
 	jwt "github.com/golang-jwt/jwt/v5"
 
+	"gin-blog/config"
 	"gin-blog/model"
 )
 
-func RegisterLoginRoutes(engine *gin.Engine) {
+func RegisterLoginRoutes(engine *gin.Engine, config *config.AppConfig) {
 
-	engine.POST("/login", DispatchLogin)
+	if PROJECT == "" {
+		// Copy the Project Name
+		PROJECT = config.Project
+	}
+
+	engine.POST(config.WebRoot+"login", DispatchLogin)
 }
 
 func DispatchLogin(c *gin.Context) {
@@ -43,7 +49,7 @@ func DispatchLogin(c *gin.Context) {
 	if userLogin.Login == "" {
 		c.JSON(http.StatusUnprocessableEntity,
 			APIErrorResponse{
-				"Blog - Error",
+				PROJECT + " - Error",
 				http.StatusUnprocessableEntity,
 				"login",
 				"Unprocessable Content",
@@ -56,7 +62,7 @@ func DispatchLogin(c *gin.Context) {
 	if user, err = GetUserByLogin(userLogin.Login); user == nil || err != nil {
 		c.JSON(http.StatusUnauthorized,
 			APIErrorResponse{
-				"Blog - Error",
+				PROJECT + " - Error",
 				http.StatusUnprocessableEntity,
 				"login",
 				"Unauthorized",
@@ -79,7 +85,7 @@ func DispatchLogin(c *gin.Context) {
 		// Create a new JWT
 		token := jwt.NewWithClaims(jwt.SigningMethodHS512,
 			jwt.MapClaims{
-				"iss": "Blog",
+				"iss": PROJECT,
 				"sub": AuthorizationSubject{user.ID, user.Login},
 				"iat": sessionStart.Unix(),
 				"exp": sessionExpiry.Unix(),
@@ -89,7 +95,7 @@ func DispatchLogin(c *gin.Context) {
 		if err == nil {
 			c.JSON(http.StatusOK,
 				LoginSuccess{
-					"Blog - Success",
+					PROJECT + " - Success",
 					http.StatusOK,
 					"login",
 					"OK",
@@ -100,7 +106,7 @@ func DispatchLogin(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusUnauthorized,
 			APIErrorResponse{
-				"Blog - Error",
+				PROJECT + " - Error",
 				http.StatusUnprocessableEntity,
 				"login",
 				"Unauthorized",
@@ -121,7 +127,7 @@ func AuthorizeRequest() gin.HandlerFunc {
 
 			c.JSON(http.StatusUnauthorized,
 				APIErrorResponse{
-					"Blog - Error",
+					PROJECT + " - Error",
 					http.StatusUnauthorized,
 					"users",
 					"Unauthorized",

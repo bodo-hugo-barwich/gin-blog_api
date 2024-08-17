@@ -7,14 +7,11 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	"gin-blog/config"
 	"gin-blog/controllers"
 )
 
-var DATABASE *gorm.DB
-
-//var err error
-
-func ConnectDatabase(config *AppConfig) (*gorm.DB, error) {
+func ConnectDatabase(config *config.AppConfig) (*gorm.DB, error) {
 	// Connect to the PostgreSQL database
 	dsn := fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable",
 		config.DB.Host, config.DB.Name, config.DB.User, config.DB.Password)
@@ -40,43 +37,55 @@ func InitializeDatabase(db *gorm.DB) error {
 	return err
 }
 
-func RegisterRoutes() *gin.Engine {
+func RegisterRoutes(config *config.AppConfig) *gin.Engine {
 	router := gin.Default()
 
 	// Register User Routes
-	controllers.RegisterUserRoutes(router)
+	controllers.RegisterHomeRoute(router, config)
+	// Register User Routes
+	controllers.RegisterUserRoutes(router, config)
 	// Register Article Routes
-	controllers.RegisterArticleRoutes(router)
+	controllers.RegisterArticleRoutes(router, config)
 	// Register Login Routes
-	controllers.RegisterLoginRoutes(router)
+	controllers.RegisterLoginRoutes(router, config)
 
 	return router
 }
 
-func Start() {
+func Start() error {
 
-	config, err := ReadConfigFile()
+	var db *gorm.DB
 
-	fmt.Printf("App - Start(): config: %#v; error: %#v\n", config, err)
+	appConfig, err := config.ReadConfigFile()
+
+	fmt.Printf("App - Start(): config: %#v; error: %#v\n", appConfig, err)
 
 	if err != nil {
-		fmt.Printf("App - Start(): Config is missing! Message: %v\n", err)
+		err = fmt.Errorf("Config is missing! Message: %v\n", err)
 
-		return
+		return err
+	}
+
+	controllers.PROJECT = appConfig.Project
+
+	if controllers.PROJECT == "" {
+		controllers.PROJECT = "Gin Blog API"
 	}
 
 	// Create the global Database Connection
-	DATABASE, err = ConnectDatabase(&config)
+	db, err = ConnectDatabase(&appConfig)
 
 	if err != nil {
-		fmt.Printf("App - Start(): Database Connection failed! Message: %v\n", err)
+		err = fmt.Errorf("Database Connection failed! Message: %v\n", err)
 
-		return
+		return err
 	}
 
-	InitializeDatabase(DATABASE)
+	InitializeDatabase(db)
 
-	router := RegisterRoutes()
+	router := RegisterRoutes(&appConfig)
 
 	router.Run(":3000")
+
+	return err
 }

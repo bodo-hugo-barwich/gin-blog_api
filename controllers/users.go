@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"gin-blog/config"
 	"gin-blog/model"
 )
 
@@ -22,18 +23,23 @@ func MigrateUsers(db *gorm.DB) error {
 	err := db.AutoMigrate(&model.User{})
 
 	if err != nil {
-		fmt.Print("Model 'User': Auto Migration failed\n")
+		fmt.Println("Model 'User': Auto Migration failed")
 	}
 
 	return err
 }
 
-func RegisterUserRoutes(engine *gin.Engine) {
+func RegisterUserRoutes(engine *gin.Engine, config *config.AppConfig) {
+
+	if PROJECT == "" {
+		// Copy the Project Name
+		PROJECT = config.Project
+	}
 
 	// User Routes
-	engine.GET("/users", AuthorizeRequest(), DisplayUsers)
-	engine.GET("/users/:id", AuthorizeRequest(), DisplayUser)
-	engine.POST("/users", AuthorizeRequest(), CreateUser)
+	engine.GET(config.WebRoot+"users", AuthorizeRequest(), DisplayUsers)
+	engine.GET(config.WebRoot+"users/:id", AuthorizeRequest(), DisplayUser)
+	engine.POST(config.WebRoot+"users", AuthorizeRequest(), CreateUser)
 }
 
 func DisplayUser(c *gin.Context) {
@@ -57,7 +63,7 @@ func DisplayUser(c *gin.Context) {
 	if userId, err = strconv.ParseUint(userIdString, 10, 64); err != nil {
 		c.JSON(http.StatusUnprocessableEntity,
 			APIErrorResponse{
-				"Blog - Error",
+				PROJECT + " - Error",
 				http.StatusUnprocessableEntity,
 				"users",
 				"Unprocessable Content",
@@ -81,7 +87,7 @@ func DisplayUser(c *gin.Context) {
 
 		c.JSON(http.StatusNotFound,
 			APIErrorResponse{
-				"Blog - Error",
+				PROJECT + " - Error",
 				http.StatusNotFound,
 				"users",
 				"Not Found",

@@ -1,4 +1,4 @@
-package app
+package config
 
 import (
 	"errors"
@@ -14,10 +14,10 @@ import (
 )
 
 type (
-	//==============================================================================
+	//==========================================================================
 	// Structure DBConfig Declaration
 
-	/// Structure for the Database Configuration
+	// DBConfig - Structure for the Database Configuration
 	DBConfig struct {
 		Host     string `yaml:"host"`
 		Name     string `yaml:"name"`
@@ -25,13 +25,14 @@ type (
 		Password string `yaml:"password"`
 	}
 
-	//==============================================================================
+	//==========================================================================
 	// Structure AppConfig Declaration
 
-	/// Structure for the Application Configuration
+	// AppConfig - Structure for the Application Configuration
 	AppConfig struct {
 		Component     string   `yaml:"component"`
 		Project       string   `yaml:"project"`
+		Description   string   `yaml:"description"`
 		WebRoot       string   `yaml:"web_root"`
 		MainDirectory string   `yaml:"main_directory"`
 		ConfigFile    string   `yaml:"config_file"`
@@ -39,6 +40,9 @@ type (
 	}
 )
 
+// CONFIG_FILE - Name of the configuration filecons
+// It will be suffixed with the GIN_MODE to preferably load the configuration file
+// for the corresponding operational environment
 const CONFIG_FILE string = ".env"
 
 func existsFile(path string) bool {

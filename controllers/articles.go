@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"gin-blog/config"
 	"gin-blog/model"
 )
 
@@ -23,19 +24,24 @@ func MigrateArticles(db *gorm.DB) error {
 	err := db.AutoMigrate(&model.Article{})
 
 	if err != nil {
-		fmt.Print("Model 'Article': Auto Migration failed\n")
+		fmt.Println("Model 'Article': Auto Migration failed")
 	}
 
 	return err
 }
 
-func RegisterArticleRoutes(engine *gin.Engine) {
+func RegisterArticleRoutes(engine *gin.Engine, config *config.AppConfig) {
+
+	if PROJECT == "" {
+		// Copy the Project Name
+		PROJECT = config.Project
+	}
 
 	// Article Routes
-	engine.GET("/articles", DisplayArticles)
-	engine.GET("/articles/:id", DisplayArticle)
-	engine.PUT("/articles/:id", AuthorizeRequest(), UpdateArticle)
-	engine.POST("/articles", AuthorizeRequest(), CreateArticle)
+	engine.GET(config.WebRoot+"articles", DisplayArticles)
+	engine.GET(config.WebRoot+"articles/:id", DisplayArticle)
+	engine.PUT(config.WebRoot+"articles/:id", AuthorizeRequest(), UpdateArticle)
+	engine.POST(config.WebRoot+"articles", AuthorizeRequest(), CreateArticle)
 }
 
 func DisplayArticle(c *gin.Context) {
@@ -52,7 +58,7 @@ func DisplayArticle(c *gin.Context) {
 	if articleId, err = strconv.ParseUint(articleIdString, 10, 64); err != nil {
 		c.JSON(http.StatusUnprocessableEntity,
 			APIErrorResponse{
-				"Blog - Error",
+				PROJECT + " - Error",
 				http.StatusUnprocessableEntity,
 				"articles",
 				"Unprocessable Content",
@@ -76,7 +82,7 @@ func DisplayArticle(c *gin.Context) {
 
 		c.JSON(http.StatusNotFound,
 			APIErrorResponse{
-				"Blog - Error",
+				PROJECT + " - Error",
 				http.StatusNotFound,
 				"articles",
 				"Not Found",
@@ -118,7 +124,7 @@ func DisplayArticles(c *gin.Context) {
 		if userId, err = strconv.Atoi(userIdString); err != nil {
 			c.JSON(http.StatusUnprocessableEntity,
 				APIErrorResponse{
-					"Blog - Error",
+					PROJECT + " - Error",
 					http.StatusUnprocessableEntity,
 					"users",
 					"Unprocessable Content",
@@ -141,7 +147,6 @@ func DisplayArticles(c *gin.Context) {
 	for idx, article := range articles {
 		displayedArticles = append(displayedArticles, model.NewDisplayedArticle(&article))
 		articleMap[article.ID] = &articles[idx]
-		userMap[article.UserID] = nil
 	}
 
 	for userID, _ := range userMap {
@@ -150,17 +155,24 @@ func DisplayArticles(c *gin.Context) {
 
 	userRes := GetUsersByIDs(userIDs)
 
+	fmt.Printf("Controller 'Articles': Users: %#v\n", userRes)
+
 	if userRes != nil {
 		for idx, user := range *userRes {
 			userMap[user.ID] = &(*userRes)[idx]
 		}
 	}
 
+	fmt.Printf("Controller 'Articles': User Map: %#v\n", userMap)
+
 	for idx, displayed := range displayedArticles {
 		article := articleMap[displayed.ID]
 
 		if user, ok := userMap[article.UserID]; ok {
+			fmt.Printf("Controller 'Articles': User (ID: '%d'): %#v\n", article.UserID, user)
+
 			displayedArticles[idx].Author = user.Name
+			displayedArticles[idx].AuthorSlug = user.Slug
 		}
 	}
 
@@ -196,7 +208,7 @@ func CreateArticle(c *gin.Context) {
 	if article.UserID == 0 {
 		c.JSON(http.StatusUnprocessableEntity,
 			APIErrorResponse{
-				"Blog - Error",
+				PROJECT + " - Error",
 				http.StatusUnprocessableEntity,
 				"articles",
 				"Unprocessable Content",
@@ -208,7 +220,7 @@ func CreateArticle(c *gin.Context) {
 		if user, err = GetUserByID(article.UserID); err != nil {
 			c.JSON(http.StatusNotFound,
 				APIErrorResponse{
-					"Blog - Error",
+					PROJECT + " - Error",
 					http.StatusNotFound,
 					"articles",
 					"Not Found",
@@ -253,7 +265,7 @@ func UpdateArticle(c *gin.Context) {
 	if articleId, err = strconv.ParseUint(articleIdString, 10, 64); err != nil {
 		c.JSON(http.StatusUnprocessableEntity,
 			APIErrorResponse{
-				"Blog - Error",
+				PROJECT + " - Error",
 				http.StatusUnprocessableEntity,
 				"articles",
 				"Unprocessable Content",
@@ -277,7 +289,7 @@ func UpdateArticle(c *gin.Context) {
 
 		c.JSON(http.StatusNotFound,
 			APIErrorResponse{
-				"Blog - Error",
+				PROJECT + " - Error",
 				http.StatusNotFound,
 				"articles",
 				"",
@@ -295,7 +307,7 @@ func UpdateArticle(c *gin.Context) {
 
 			c.JSON(http.StatusUnprocessableEntity,
 				APIErrorResponse{
-					"Blog - Error",
+					PROJECT + " - Error",
 					http.StatusUnprocessableEntity,
 					"articles",
 					"Unprocessable Content",
