@@ -46,7 +46,7 @@ var testArticles = []model.Article{
 
 var resDisplayedArticles map[uint]*model.DisplayedArticle = make(map[uint]*model.DisplayedArticle)
 
-func TestArticleRoutes(t *testing.T) {
+func TestDisplayArticles(t *testing.T) {
 	var appConfig config.AppConfig
 	var db *gorm.DB
 	var err error

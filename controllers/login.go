@@ -129,7 +129,7 @@ func AuthorizeRequest() gin.HandlerFunc {
 				APIErrorResponse{
 					PROJECT + " - Error",
 					http.StatusUnauthorized,
-					"users",
+					"login",
 					"Unauthorized",
 					fmt.Sprintf("Authorization failed: %v", err),
 				})
@@ -144,7 +144,7 @@ func AuthorizeRequest() gin.HandlerFunc {
 }
 
 func ValidateAuthorizationHeader(c *gin.Context) (*model.User, error) {
-	var tokenString string
+	var tokenString string = ""
 
 	authorizationHeader := c.Request.Header["Authorization"]
 
@@ -157,7 +157,9 @@ func ValidateAuthorizationHeader(c *gin.Context) (*model.User, error) {
 	if strings.HasPrefix(bearerString, "Bearer ") {
 		bearerFields := strings.Fields(bearerString)
 
-		tokenString = bearerFields[1]
+		if len(bearerFields) > 1 {
+			tokenString = bearerFields[1]
+		}
 	}
 
 	if tokenString == "" {
@@ -170,8 +172,6 @@ func ValidateAuthorizationHeader(c *gin.Context) (*model.User, error) {
 func ValidateToken(tokenString string) (*model.User, error) {
 	var user *model.User
 	var err error
-
-	fmt.Println("Controller 'Login': ValidateToken() go ...")
 
 	token, err := jwt.Parse(tokenString, GetEncryptionKey)
 	if err != nil {

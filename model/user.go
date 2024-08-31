@@ -3,6 +3,7 @@ package model
 import (
 	"crypto/sha512"
 	"fmt"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -18,6 +19,12 @@ type (
 		Articles []Article
 	}
 
+	DisplayedUser struct {
+		Name     string `json:"name"`
+		Slug       string `json:"slug"`
+		Email      string `json:"email"`
+	}
+
 	Login struct {
 		Login    string `json:"login"`
 		Password string `json:"password"`
@@ -26,6 +33,40 @@ type (
 
 var ENCRYPTIONSALT string = "gin-blog"
 var ENCRYPTIONKEY []byte = []byte("gin-blog")
+
+func NewDisplayedUser(user *User) DisplayedUser {
+	return DisplayedUser{
+		user.Name,
+		user.Slug,
+		user.Email,
+	}
+}
+
+func (user *User) Update(update *User) {
+	if update.Name != "" {
+		user.Name = update.Name
+	}
+
+	if update.Slug != "" {
+		user.Slug = update.Slug
+	}
+
+	if update.Login != "" {
+		user.Login = update.Login
+	}
+
+	if update.Email != "" {
+		user.Email = update.Email
+	}
+
+	if update.Password != "" {
+		user.Password = update.Password
+
+		if !strings.HasPrefix(user.Password, "*") {
+			user.Password = EncryptPassword(user.Password, ENCRYPTIONSALT)
+		}
+	}
+}
 
 func (user *User) Auth(login string, password string, salt string) bool {
 	if user.Login != login {

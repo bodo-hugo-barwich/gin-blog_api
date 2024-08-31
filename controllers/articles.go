@@ -126,7 +126,7 @@ func DisplayArticles(c *gin.Context) {
 				APIErrorResponse{
 					PROJECT + " - Error",
 					http.StatusUnprocessableEntity,
-					"users",
+					"articles",
 					"Unprocessable Content",
 					"User ID: ID is invalid! Message: " + err.Error(),
 				})

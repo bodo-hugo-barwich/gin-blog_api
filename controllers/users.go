@@ -40,6 +40,8 @@ func RegisterUserRoutes(engine *gin.Engine, config *config.AppConfig) {
 	engine.GET(config.WebRoot+"users", AuthorizeRequest(), DisplayUsers)
 	engine.GET(config.WebRoot+"users/:id", AuthorizeRequest(), DisplayUser)
 	engine.POST(config.WebRoot+"users", AuthorizeRequest(), CreateUser)
+	engine.PUT(config.WebRoot+"users/:id", AuthorizeRequest(), UpdateUser)
+	engine.DELETE(config.WebRoot+"users/:id", AuthorizeRequest(), DeleteUser)
 }
 
 func DisplayUser(c *gin.Context) {
@@ -142,6 +144,127 @@ func CreateUser(c *gin.Context) {
 	DATABASE.Create(&user)
 
 	c.JSON(http.StatusOK, user)
+}
+
+func UpdateUser(c *gin.Context) {
+	var user *model.User
+	var updated model.User
+	var userId uint64
+	var err error
+
+	admin, ok := c.Get("AuthUser")
+
+	fmt.Printf("Controller 'Users': Admin: %#v; ok: %#v\n", admin, ok)
+
+	if admin == nil || !ok {
+		// Exit on missing Authorized User
+		return
+	}
+
+	userIdString := c.Params.ByName("id")
+
+	fmt.Printf("Controller 'Users': User ID 0: %#v\n", userIdString)
+
+	if userId, err = strconv.ParseUint(userIdString, 10, 64); err != nil {
+		c.JSON(http.StatusUnprocessableEntity,
+			APIErrorResponse{
+				PROJECT + " - Error",
+				http.StatusUnprocessableEntity,
+				"users",
+				"Unprocessable Content",
+				"User ID: ID is invalid! Message: " + err.Error(),
+			})
+
+		return
+	}
+
+	fmt.Printf("Controller 'Users': User ID 1: %#v\n", userId)
+
+	c.BindJSON(&updated)
+
+	if user, err = GetUserByID(uint(userId)); user == nil || err != nil {
+		fmt.Printf("Controller 'Users': User (ID '%d'): %#v; Error: %#v\n", userId, user, err)
+
+		desc := "User (ID: '" + userIdString + "'): User does not exist"
+
+		if err != nil {
+			desc = err.Error()
+		}
+
+		c.JSON(http.StatusNotFound,
+			APIErrorResponse{
+				PROJECT + " - Error",
+				http.StatusNotFound,
+				"users",
+				"Not Found",
+				desc,
+			})
+
+		return
+	}
+
+	user.Update(&updated)
+
+	DATABASE.Save(&user)
+
+	c.JSON(http.StatusOK, user)
+}
+
+func DeleteUser(c *gin.Context) {
+	var user *model.User
+	var userId uint64
+	var message string
+	var err error
+
+	admin, ok := c.Get("AuthUser")
+
+	fmt.Printf("Controller 'Users': Admin: %#v; ok: %#v\n", admin, ok)
+
+	if admin == nil || !ok {
+		// Exit on missing Authorized User
+		return
+	}
+
+	userIdString := c.Params.ByName("id")
+
+	fmt.Printf("Controller 'Users': User ID 0: %#v\n", userIdString)
+
+	if userId, err = strconv.ParseUint(userIdString, 10, 64); err != nil {
+		c.JSON(http.StatusUnprocessableEntity,
+			APIErrorResponse{
+				PROJECT + " - Error",
+				http.StatusUnprocessableEntity,
+				"users",
+				"Unprocessable Content",
+				"User ID: ID is invalid! Message: " + err.Error(),
+			})
+
+		return
+	}
+
+	fmt.Printf("Controller 'Users': User ID 1: %#v\n", userId)
+
+	if user, err = GetUserByID(uint(userId)); user == nil || err != nil {
+		fmt.Printf("Controller 'Users': User (ID '%d'): %#v; Error: %#v\n", userId, user, err)
+
+		message = fmt.Sprintf("User (ID: '%d'): User does not exist", userId)
+	}
+
+	if user != nil {
+		DATABASE.Delete(&user, user.ID)
+
+		message = fmt.Sprintf("User (ID: '%d'): User was deleted", user.ID)
+	}
+
+	c.JSON(http.StatusOK,
+		APIDeleteSuccess{
+			PROJECT + " - Delete Success",
+			http.StatusOK,
+			"users",
+			"OK",
+			message,
+		},
+	)
 }
 
 func GetUserByID(userID uint) (*model.User, error) {

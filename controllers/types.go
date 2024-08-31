@@ -23,6 +23,14 @@ type (
 		ErrorDescription string
 	}
 
+	APIDeleteSuccess struct {
+		Title       string
+		StatusCode  uint
+		Page        string
+		Message     string
+		Description string
+	}
+
 	LoginSuccess struct {
 		Title      string
 		StatusCode uint
