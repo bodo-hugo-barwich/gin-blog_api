@@ -5,9 +5,9 @@ Gin Blog API
 
 # DESCRIPTION
 
-This a REST API that manages _User_ and _Article_ entities.
+This a **REST API** that manages _User_ and _Article_ entities.
 
-It also features a JWT admin authentication.
+It also features a **JWT** admin authentication.
 
 # REQUIREMENTS
 
@@ -19,10 +19,21 @@ The Server Responses are provided as `JSON` documents.
 
 # INSTALLATION
 
-- go
+- **go**
 
 The `go` Command will install the dependencies on local user level as they
 are found in the `go.mod` file.
+
+# CONFIGURATION
+
+- `.env`
+
+The a `.env` file contains the basic configuration for the service.\
+A fallback system looks first for the `.env` file corresponding to the `GIN_MODE` like
+`.env.test` or `.env.debug` and then falls back to the default `.env` file
+if the dedicated file not exists.\
+The `.env_sample` can be copied and configured to build a configuration file.
+
 
 # EXECUTION
 
@@ -35,9 +46,9 @@ To launch the Site call the `go run` Command within the project directory:
 
 # IMPLEMENTATION
 
-- API-First Design
+- **API-First Design**
 
-To be modular and extendable the **API-First** was chosen.
+To be modular and extendable the **API-First** design was chosen.
 
 So, this API is meant to be combined with a web site which will give a grafical interface to the information stored in the API.
 
