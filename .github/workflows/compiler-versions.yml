@@ -15,7 +15,7 @@ jobs:
         go-version: [ 1.20.0, 1.22.3 ]
 
     services:
-      db:
+      api_db:
         image: postgres:16.3-alpine3.20
         ports:
           - 5432:5432
@@ -35,7 +35,7 @@ jobs:
             -re "s/<user_password>/${DB_PASSWORD}/" > .env.test
         env:
           # The hostname used to communicate with the PostgreSQL service container
-          DB_HOST: db
+          DB_HOST: api_db
           DB_NAME: gin_blog
           DB_USER: gin_blog
           DB_PASSWORD: secret
@@ -52,4 +52,4 @@ jobs:
         run: go test -v ./...
         env:
           # The hostname used to communicate with the PostgreSQL service container
-          DB_HOST: db
+          DB_HOST: api_db
