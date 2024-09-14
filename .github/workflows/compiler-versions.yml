@@ -29,10 +29,10 @@ jobs:
 
       - name: Config App
         run: |
-          cat .env_sample | sed -re 's/<provider_database_host>/${DB_HOST}/' \
-            -re 's/<provider_database_name>/${DB_NAME}/' \
-            -re 's/<database_user>/${DB_USER}/' \
-            -re 's/<user_password>/${DB_PASSWORD}/' > .env.test
+          cat .env_sample | sed -re "s/<database_host>/${DB_HOST}/" \
+            -re "s/<database_name>/${DB_NAME}/" \
+            -re "s/<database_user>/${DB_USER}/" \
+            -re "s/<user_password>/${DB_PASSWORD}/" > .env.test
         env:
           # The hostname used to communicate with the PostgreSQL service container
           DB_HOST: db
