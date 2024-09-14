@@ -42,6 +42,7 @@ func RegisterArticleRoutes(engine *gin.Engine, config *config.AppConfig) {
 	engine.GET(config.WebRoot+"articles/:id", DisplayArticle)
 	engine.PUT(config.WebRoot+"articles/:id", AuthorizeRequest(), UpdateArticle)
 	engine.POST(config.WebRoot+"articles", AuthorizeRequest(), CreateArticle)
+	engine.DELETE(config.WebRoot+"articles/:id", AuthorizeRequest(), DeleteArticle)
 }
 
 func DisplayArticle(c *gin.Context) {
@@ -323,6 +324,63 @@ func UpdateArticle(c *gin.Context) {
 	DATABASE.Save(&article)
 
 	c.JSON(http.StatusOK, article)
+}
+
+func DeleteArticle(c *gin.Context) {
+	var article *model.Article
+	var articleId uint64
+	var message string
+	var err error
+
+	editor, ok := c.Get("AuthUser")
+
+	fmt.Printf("Controller 'Articles': Editor: %#v; ok: %#v\n", editor, ok)
+
+	if editor == nil || !ok {
+		// Exit on missing Authorized User
+		return
+	}
+
+	articleIdString := c.Params.ByName("id")
+
+	fmt.Printf("Controller 'Articles': Article ID 0: %#v\n", articleIdString)
+
+	if articleId, err = strconv.ParseUint(articleIdString, 10, 64); err != nil {
+		c.JSON(http.StatusUnprocessableEntity,
+			APIErrorResponse{
+				PROJECT + " - Error",
+				http.StatusUnprocessableEntity,
+				"articles",
+				"Unprocessable Content",
+				"Article ID: ID is invalid! Message: " + err.Error(),
+			})
+
+		return
+	}
+
+	fmt.Printf("Controller 'Articles': Article ID 1: %#v\n", articleId)
+
+	if article, err = GetArticleByID(uint(articleId)); article == nil || err != nil {
+		fmt.Printf("Controller 'Articles': Article (ID '%d'): %#v; Error: %#v\n", articleId, article, err)
+
+		message = fmt.Sprintf("Article (ID: '%d'): User does not exist", articleId)
+	}
+
+	if article != nil {
+		DATABASE.Delete(&article, article.ID)
+
+		message = fmt.Sprintf("Article (ID: '%d'): Article was deleted", article.ID)
+	}
+
+	c.JSON(http.StatusOK,
+		APIDeleteSuccess{
+			PROJECT + " - Delete Success",
+			http.StatusOK,
+			"users",
+			"OK",
+			message,
+		},
+	)
 }
 
 func GetArticleByID(articleID uint) (*model.Article, error) {

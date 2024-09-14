@@ -12,18 +12,37 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        go-version: [ 1.20.0, 1.22.3 ]  
-    
+        go-version: [ 1.20.0, 1.22.3 ]
+
+    services:
+      db:
+        image: postgres:16.3-alpine3.20
+        ports:
+          - 5432:5432
+        env:
+          - "COMPONENT=ginblog_db"
+          - "POSTGRES_USER=gin_blog"
+          - "POSTGRES_PASSWORD=secret"
+
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '${{ matrix.go-version }}'
+      - name: Config App
+        run: |
+          cat .env_sample | sed -re 's/<provider_database_host>/localhost/' \
+            -re 's/<provider_database_name>/gin_blog/' \
+            -re 's/<database_user>/gin_blog/' \
+            -re 's/<user_password>/secret/' > .env.test
 
-    - name: Build
-      run: go build -v ./...
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '${{ matrix.go-version }}'
 
-    - name: Test
-      run: go test -v ./...
+      - name: Build
+        run: go build -v ./...
+
+      - name: Test
+        run: | 
+          go test -v ./...
+		

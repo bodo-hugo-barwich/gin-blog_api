@@ -482,12 +482,17 @@ func TestDeleteUser(t *testing.T) {
 	fmt.Printf("Request %s '%s ? %s' - Body:\n'%#v'\n", req.Method, req.URL.Path, req.URL.RawQuery, res.Body.String())
 
 	var deleteResponse controllers.APIDeleteSuccess
+	expectedTitle := fmt.Sprintf("%s - Delete Success", appConfig.Project)
 	expectedDescription := fmt.Sprintf("User (ID: '%d'): User was deleted", testUser.ID)
 
 	err = json.Unmarshal(res.Body.Bytes(), &deleteResponse)
 
 	if err != nil {
 		t.Errorf("Request %s '%s ? %s': Response is invalid JSON! Message: %#v", req.Method, req.URL.Path, req.URL.RawQuery, err)
+	}
+
+	if deleteResponse.Title != expectedTitle {
+		t.Errorf("Delete User (%d) '%s': Title '%s' but expected '%s'", testUser.ID, testUser.Login, deleteResponse.Title, expectedTitle)
 	}
 
 	if deleteResponse.Description != expectedDescription {

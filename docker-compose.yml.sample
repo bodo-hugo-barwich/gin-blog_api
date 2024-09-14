@@ -10,7 +10,7 @@ services:
       - /path/to/project/data/pg:/var/lib/postgresql/data:Z
     environment:
       - COMPONENT=ginblog_db
-      - POSTGRES_USER=ginblog
+      - POSTGRES_USER=gin_blog
       - POSTGRES_PASSWORD=secret
   api:
     container_name: 'ginblog_api'
