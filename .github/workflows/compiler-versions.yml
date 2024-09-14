@@ -20,9 +20,9 @@ jobs:
         ports:
           - 5432:5432
         env:
-          - "COMPONENT=ginblog_db"
-          - "POSTGRES_USER=gin_blog"
-          - "POSTGRES_PASSWORD=secret"
+          COMPONENT: ginblog_db
+          POSTGRES_USER: gin_blog
+          POSTGRES_PASSWORD: secret
 
     steps:
       - uses: actions/checkout@v4
