@@ -44,7 +44,7 @@ jobs:
         run: |
           echo "127.0.0.1:5432:gin_blog:gin_blog:secret" > ~/.pgpass
           chmod g-rwx,o-rwx ~/.pgpass
-          psql "service=localhost" -c 'select 1 as ping;'
+          psql "postgresql://localhost:5432/gin_blog" -c 'select 1 as ping;'
 
       - name: Set up Go
         uses: actions/setup-go@v4
