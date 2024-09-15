@@ -46,7 +46,7 @@ jobs:
           ping_max_count=10
           ping_count=0
           while [[ $ping -ne 1 && $ping_count -lt $ping_max_count ]]; do
-            ping_count=$ping_count + 1
+            ping_count=$((ping_count + 1))
             ping_info=`psql "postgresql://gin_blog:secret@localhost" -c 'select 1 as ping;' 2>&1` || true
             echo "Ping No. $ping_count:"
             echo -e "$ping_info"
