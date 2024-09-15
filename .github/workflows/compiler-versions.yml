@@ -50,7 +50,7 @@ jobs:
             ping_info=`psql "postgresql://gin_blog:secret@localhost" -c 'select 1 as ping;' 2>&1` || true
             echo "Ping No. $ping_count:"
             echo -e "$ping_info"
-            ping=`echo "$ping_info" | grep -A2 -i "ping" | grep -oE "\d+"`
+            ping=`echo "$ping_info" | grep -A2 -i "ping" | grep -oE "[0-9]+"` || true
             echo "Ping Result: '$ping'"
             
             if [ -z "$ping" ]; then
