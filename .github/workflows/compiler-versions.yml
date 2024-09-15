@@ -42,7 +42,7 @@ jobs:
 
       - name: Inspect Database
         run: |
-          psql "postgresql://gin_blog:secret@localhost" -c 'select 1 as ping;' || true
+          psql "postgresql://gin_blog:secret@localhost" -c 'select 1 as ping; \\ \l' || true
           echo "* Service 'db' logs:"
           docker logs "${{ job.services.db.id }}"
 
