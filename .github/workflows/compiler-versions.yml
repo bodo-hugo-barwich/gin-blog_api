@@ -40,6 +40,13 @@ jobs:
           DB_USER: gin_blog
           DB_PASSWORD: secret
 
+      - name: Inspect Database
+        run: |
+          echo "localhost:5432:gin_blog:gin_blog:secret" > ~/.pgpass
+          chmod g-rwx,o-rwx ~/.pgpass
+          psql -h localhost -d gin_blog -U gin_blog -w -c '\l'
+
+
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
