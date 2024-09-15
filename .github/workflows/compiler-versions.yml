@@ -42,8 +42,6 @@ jobs:
 
       - name: Inspect Database
         run: |
-          echo "127.0.0.1:5432:gin_blog:gin_blog:secret" > ~/.pgpass
-          chmod g-rwx,o-rwx ~/.pgpass
           psql "postgresql://gin_blog:secret@localhost/gin_blog" -c 'select 1 as ping;'
 
       - name: Set up Go
