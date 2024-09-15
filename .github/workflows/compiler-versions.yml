@@ -42,7 +42,9 @@ jobs:
 
       - name: Inspect Database
         run: |
-          psql "postgresql://gin_blog:secret@localhost" -c 'select 1 as ping;'
+          psql "postgresql://gin_blog:secret@localhost" -c 'select 1 as ping;' || true
+          echo "* Service 'db' logs:"
+          docker logs "${{ job.services.db.id }}"
 
       - name: Set up Go
         uses: actions/setup-go@v4
