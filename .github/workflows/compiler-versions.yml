@@ -42,7 +42,7 @@ jobs:
 
       - name: Inspect Database
         run: |
-          psql "postgresql://gin_blog:secret@localhost/gin_blog" -c 'select 1 as ping;'
+          psql "postgresql://gin_blog:secret@localhost" -c 'select 1 as ping;'
 
       - name: Set up Go
         uses: actions/setup-go@v4
