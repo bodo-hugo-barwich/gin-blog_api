@@ -51,11 +51,12 @@ jobs:
             echo "Ping No. $ping_count:"
             echo -e "$ping_info"
             ping=`echo "$ping_info" | grep -A2 -i "ping" | grep -oE "\d+"`
+            echo "Ping Result: '$ping'"
             
             if [ -z "$ping" ]; then
               ping=0
             fi			
-          done	
+          done
 
           echo "* Service 'db' logs:"
           docker logs "${{ job.services.db.id }}"
