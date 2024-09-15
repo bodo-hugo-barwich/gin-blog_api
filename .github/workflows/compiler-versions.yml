@@ -42,7 +42,7 @@ jobs:
 
       - name: Inspect Database
         run: |
-          echo "localhost:5432:gin_blog:gin_blog:secret" > ~/.pgpass
+          echo "127.0.0.1:5432:gin_blog:gin_blog:secret" > ~/.pgpass
           chmod g-rwx,o-rwx ~/.pgpass
           psql -c '\l'
 
