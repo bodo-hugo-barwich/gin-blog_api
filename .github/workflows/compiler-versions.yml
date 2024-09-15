@@ -49,7 +49,7 @@ jobs:
             ping_count=$ping_count + 1
             ping_info=`psql "postgresql://gin_blog:secret@localhost" -c 'select 1 as ping;' 2>&1` || true
             echo "Ping No. $ping_count:"
-            echo $ping_info
+            echo -e "$ping_info"
             ping=`echo "$ping_info" | grep -A2 -i "ping" | grep -oE "\d+"`
             
             if [ -z "$ping" ]; then
