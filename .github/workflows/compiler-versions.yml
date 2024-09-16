@@ -55,6 +55,9 @@ jobs:
             
             if [ -z "$ping" ]; then
               ping=0
+
+              # grant time to start up
+              sleep 1
             fi			
           done
 
