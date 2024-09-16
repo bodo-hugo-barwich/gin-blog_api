@@ -65,8 +65,8 @@ func TestDisplayUsers(t *testing.T) {
 		t.Fatalf("Database Connection: Connection failed! Message: %#v", err)
 	}
 
-	if err = InitializeDatabase(db); err != nil {
-		t.Fatalf("Database Setup: Setup failed! Message: %#v", err)
+	if err = controllers.MigrateUsers(db); err != nil {
+		t.Fatalf("Users Migration: Migration failed! Message: %#v", err)
 	}
 
 	router := gin.Default()
@@ -199,8 +199,8 @@ func TestCreateUser(t *testing.T) {
 		t.Fatalf("Database Connection: Connection failed! Message: %#v", err)
 	}
 
-	if err = controllers.MigrateArticles(db); err != nil {
-		t.Fatalf("Articles Migration: Migration failed! Message: %#v", err)
+	if err = controllers.MigrateUsers(db); err != nil {
+		t.Fatalf("Users Migration: Migration failed! Message: %#v", err)
 	}
 
 	router := gin.Default()
@@ -307,8 +307,8 @@ func TestUpdateUser(t *testing.T) {
 		t.Fatalf("Database Connection: Connection failed! Message: %#v", err)
 	}
 
-	if err = controllers.MigrateArticles(db); err != nil {
-		t.Fatalf("Articles Migration: Migration failed! Message: %#v", err)
+	if err = controllers.MigrateUsers(db); err != nil {
+		t.Fatalf("Users Migration: Migration failed! Message: %#v", err)
 	}
 
 	router := gin.Default()
@@ -416,8 +416,8 @@ func TestDeleteUser(t *testing.T) {
 		t.Fatalf("Database Connection: Connection failed! Message: %#v\n", err)
 	}
 
-	if err = controllers.MigrateArticles(db); err != nil {
-		t.Fatalf("Articles Migration: Migration failed! Message: %#v\n", err)
+	if err = controllers.MigrateUsers(db); err != nil {
+		t.Fatalf("Users Migration: Migration failed! Message: %#v\n", err)
 	}
 
 	router := gin.Default()

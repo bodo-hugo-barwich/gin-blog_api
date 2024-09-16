@@ -50,7 +50,7 @@ func TestCreateArticle(t *testing.T) {
 		t.Fatalf("Database Connection: Connection failed! Message: %#v", err)
 	}
 
-	if err = controllers.MigrateArticles(db); err != nil {
+	if err = InitializeDatabase(db); err != nil {
 		t.Fatalf("Articles Migration: Migration failed! Message: %#v", err)
 	}
 
