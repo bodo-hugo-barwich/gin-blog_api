@@ -63,6 +63,7 @@ jobs:
 
           if [ $ping -eq 1 ]; then
             psql "postgresql://gin_blog:secret@localhost" -c '\l'
+            psql "postgresql://gin_blog:secret@localhost" -c '\c gin_blog' -c '\d'
           fi
 
       - name: Set up Go
