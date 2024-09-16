@@ -1,3 +1,6 @@
+[![Testing against Compiler Versions]
+(https://github.com/bodo-hugo-barwich/gin-blog_api/actions/workflows/compiler-versions.yml/badge.svg)]
+(https://github.com/bodo-hugo-barwich/gin-blog_api/actions/workflows/compiler-versions.yml)
 
 # NAME
 
