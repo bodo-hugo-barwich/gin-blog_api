@@ -1,5 +1,4 @@
-[![Testing against Compiler Versions](https://github.com/bodo-hugo-barwich/gin-blog_api/actions/workflows/compiler-versions.yml/badge.svg)]
-(https://github.com/bodo-hugo-barwich/gin-blog_api/actions/workflows/compiler-versions.yml)
+[![Testing against Compiler Versions](https://github.com/bodo-hugo-barwich/gin-blog_api/actions/workflows/compiler-versions.yml/badge.svg)](https://github.com/bodo-hugo-barwich/gin-blog_api/actions/workflows/compiler-versions.yml)
 
 # NAME
 
@@ -11,19 +10,21 @@ This a **REST API** that manages _User_ and _Article_ entities.
 
 It also features a **JWT** admin authentication.
 
+This API is meant to be consumed by a frontend to give it a graphical interface.
+
 # REQUIREMENTS
 
 To rebuild this web site the tested **Minimum Go Compiler Version** is _Go_ `1.19`.\
 The site uses the libraries `Gin`, `Gorm` and `golang-jwt`.\
 The _Gin_ Web Server uses the _Gorm_ framework for the database access.\
 At the moment only _PostgreSQL_ is supported as database backend.\
-The Server Responses are provided as `JSON` documents.
+The server responses are provided as `JSON` documents.
 
 # INSTALLATION
 
 - **go**
 
-The `go` Command will install the dependencies on local user level as they
+The `go` command will install the dependencies on local user level as they
 are found in the `go.mod` file.
 
 # CONFIGURATION
@@ -41,8 +42,8 @@ The `.env_sample` can be copied and configured to build a configuration file.
 
 - `go run .`
 
-The Site can be launched using the `go run` Command.
-To launch the Site call the `go run` Command within the project directory:
+The Site can be launched using the `go run` command.
+To launch the Site call the `go run` command within the project directory:
 
             go run .
 
