@@ -61,6 +61,10 @@ jobs:
           echo "* Service 'db' logs:"
           docker logs "${{ job.services.db.id }}"
 
+          if [ $ping -eq 1 ]; then
+            psql "postgresql://gin_blog:secret@localhost" -c '\l'
+          fi
+
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
