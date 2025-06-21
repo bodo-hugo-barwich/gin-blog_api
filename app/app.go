@@ -1,10 +1,14 @@
 package app
 
 import (
+	"os"
 	"fmt"
+	"strings"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
 	"gin-blog/config"
@@ -12,15 +16,43 @@ import (
 )
 
 func ConnectDatabase(config *config.AppConfig) (*gorm.DB, error) {
-	// Connect to the PostgreSQL database
-	dsn := fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable",
-		config.DB.Host, config.DB.Name, config.DB.User, config.DB.Password)
+	var db *gorm.DB = nil
+	var err error = nil
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	switch config.DB.Driver  {
+		case  "postgres":
+		// Connect to the PostgreSQL database
+		dsn := fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable",
+			config.DB.Host, config.DB.Name, config.DB.User, config.DB.Password)
+
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	case  "mysql":
+		// Connect to the MySQL database
+		paramsBuilder := strings.Builder{}
+
+		for param, value := range config.DB.Params {
+			paramsBuilder.WriteString(fmt.Sprintf("%s=%s&", strings.ToLower(param), value))
+		}
+
+		var host string
+
+		switch config.DB.Protocol {
+			case "tcp":
+				host = config.DB.Host + ":3306"
+		    case "unix":
+				host = config.DB.Host
+		}
+
+		dsn := fmt.Sprintf("%s:%s@%s(%s)/%s?%s",
+			config.DB.User, config.DB.Password, config.DB.Protocol, host, config.DB.Name, paramsBuilder.String() )
+
+		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	}
 
 	if err != nil {
 		panic("Failed to connect to database")
 	}
+
 	return db, err
 }
 
@@ -85,7 +117,13 @@ func Start() error {
 
 	router := RegisterRoutes(&appConfig)
 
-	router.Run(":3000")
+	server_port := os.Getenv("PORT")
+
+	if server_port == "" {
+		server_port = strconv.Itoa(int(appConfig.Port))
+	}
+
+	router.Run(":" + server_port)
 
 	return err
 }

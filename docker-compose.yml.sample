@@ -1,6 +1,5 @@
-version: '3'
 services:
-  db:
+  db_postgres:
     container_name: 'ginblog_db'
     image: postgres:16.3-alpine3.20
 #    restart: always
@@ -12,6 +11,21 @@ services:
       - COMPONENT=ginblog_db
       - POSTGRES_USER=gin_blog
       - POSTGRES_PASSWORD=secret
+  db_mysql:
+    container_name: 'ginblog_db'
+    image: yobasystems/alpine-mariadb:10.11.10-amd64
+#    restart: always
+    ports:
+      - "3306:3306"
+    volumes:
+      - /path/to/project/data/mysql:/var/lib/mysql:Z
+    environment:
+      - COMPONENT=ginblog_db
+      - MYSQL_DATABASE=gin_blog
+      - MYSQL_USER=gin_blog
+      - MYSQL_PASSWORD=secret
+      - MYSQL_ROOT_PASSWORD=root.secret
+      - MYSQL_CHARSET=utf8mb4
   api:
     container_name: 'ginblog_api'
     image: golang:1.22.3-alpine3.20

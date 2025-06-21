@@ -19,10 +19,13 @@ type (
 
 	// DBConfig - Structure for the Database Configuration
 	DBConfig struct {
+		Driver string `yaml:"driver"`
 		Host     string `yaml:"host"`
+		Protocol string `yaml:"protocol"`
 		Name     string `yaml:"name"`
 		User     string `yaml:"user"`
 		Password string `yaml:"password"`
+		Params map[string]string `yaml:"params"`
 	}
 
 	//==========================================================================
@@ -36,6 +39,7 @@ type (
 		WebRoot       string   `yaml:"web_root"`
 		MainDirectory string   `yaml:"main_directory"`
 		ConfigFile    string   `yaml:"config_file"`
+		Port		uint32	`yaml:"port"`
 		DB            DBConfig `yaml:"database"`
 	}
 )

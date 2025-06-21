@@ -9,13 +9,14 @@ on:
 jobs:
 
   compiler-version-testing:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         go-version: [ 1.19.8, 1.20.0, 1.22.3 ]
+        database: [ 'postgres', 'mysql' ]
 
     services:
-      db:
+      db_postgres:
         image: postgres:16.3-alpine3.20
         ports:
           - 5432:5432
@@ -23,16 +24,40 @@ jobs:
           COMPONENT: ginblog_db
           POSTGRES_USER: gin_blog
           POSTGRES_PASSWORD: secret
+      db_mysql:
+        image: yobasystems/alpine-mariadb:10.11.10-amd64
+        ports:
+          - 3306:3306
+        env:
+          COMPONENT: ginblog_db
+          MYSQL_DATABASE: gin_blog
+          MYSQL_USER: gin_blog
+          MYSQL_PASSWORD: secret
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Config App
+      - name: Config App '${{ matrix.database }}'
         run: |
-          cat .env_sample | sed -re "s/<database_host>/${DB_HOST}/" \
-            -re "s/<database_name>/${DB_NAME}/" \
-            -re "s/<database_user>/${DB_USER}/" \
-            -re "s/<user_password>/${DB_PASSWORD}/" > .env.test
+          if [ "${{ matrix.database }}" == "mysql" ]; then
+            cat .env_sample | sed -re "s/<database_driver>/${{ matrix.database }}/"
+              -re "s/<database_host>/${DB_HOST}/" \
+              -re "s/<connection_protocol>/tcp/" \
+              -re "s/<database_name>/${DB_NAME}/" \
+              -re "s/<database_user>/${DB_USER}/" \
+              -re "s/<user_password>/${DB_PASSWORD}/" \
+              -re "s/<param_name>/charset/" \
+              -re "s/<param_value>/utf8mb4/" > .env.test
+          else 
+            cat .env_sample | sed -re "s/<database_driver>/${{ matrix.database }}/"
+              -re "s/<database_host>/${DB_HOST}/" \
+              -re "s/<connection_protocol>/tcp/" \
+              -re "s/<database_name>/${DB_NAME}/" \
+              -re "s/<database_user>/${DB_USER}/" \
+              -re "s/<user_password>/${DB_PASSWORD}/" \
+              -re "s/params:/# params:/" \
+              -re "s/<param_name>/# <param_name>/" > .env.test
+          fi
         env:
           # The hostname used to communicate with the PostgreSQL service container
           DB_HOST: localhost
