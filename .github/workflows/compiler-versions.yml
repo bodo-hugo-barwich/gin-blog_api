@@ -87,7 +87,7 @@ jobs:
           done
 
           echo "* Service 'db' logs:"
-          docker logs "${{ job.services.db.id }}"
+          docker logs "${{ job.services.db_postgres.id }}"
 
           if [ $ping -eq 1 ]; then
             psql "postgresql://gin_blog:secret@localhost" -c '\l'
