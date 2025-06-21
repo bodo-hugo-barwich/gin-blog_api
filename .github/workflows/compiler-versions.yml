@@ -40,7 +40,7 @@ jobs:
       - name: Config App '${{ matrix.database }}'
         run: |
           if [ "${{ matrix.database }}" == "mysql" ]; then
-            cat .env_sample | sed -re "s/<database_driver>/${{ matrix.database }}/"
+            cat .env_sample | sed -re "s/<database_driver>/${{ matrix.database }}/" \
               -re "s/<database_host>/${DB_HOST}/" \
               -re "s/<connection_protocol>/tcp/" \
               -re "s/<database_name>/${DB_NAME}/" \
@@ -49,7 +49,7 @@ jobs:
               -re "s/<param_name>/charset/" \
               -re "s/<param_value>/utf8mb4/" > .env.test
           else 
-            cat .env_sample | sed -re "s/<database_driver>/${{ matrix.database }}/"
+            cat .env_sample | sed -re "s/<database_driver>/${{ matrix.database }}/" \
               -re "s/<database_host>/${DB_HOST}/" \
               -re "s/<connection_protocol>/tcp/" \
               -re "s/<database_name>/${DB_NAME}/" \
