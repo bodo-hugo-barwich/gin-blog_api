@@ -20,9 +20,9 @@ type (
 	}
 
 	DisplayedUser struct {
-		Name     string `json:"name"`
-		Slug       string `json:"slug"`
-		Email      string `json:"email"`
+		Name  string `json:"name"`
+		Slug  string `json:"slug"`
+		Email string `json:"email"`
 	}
 
 	Login struct {
@@ -33,14 +33,6 @@ type (
 
 var ENCRYPTIONSALT string = "gin-blog"
 var ENCRYPTIONKEY []byte = []byte("gin-blog")
-
-func NewDisplayedUser(user *User) DisplayedUser {
-	return DisplayedUser{
-		user.Name,
-		user.Slug,
-		user.Email,
-	}
-}
 
 func (user *User) Update(update *User) {
 	if update.Name != "" {
@@ -84,6 +76,14 @@ func (user *User) Auth(login string, password string, salt string) bool {
 
 func (user *User) AuthLogin(logindata *Login, salt string) bool {
 	return user.Auth(logindata.Login, logindata.Password, salt)
+}
+
+func NewDisplayedUser(user *User) DisplayedUser {
+	return DisplayedUser{
+		user.Name,
+		user.Slug,
+		user.Email,
+	}
 }
 
 func EncryptPassword(password string, salt string) string {

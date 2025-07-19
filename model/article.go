@@ -25,19 +25,6 @@ type DisplayedArticle struct {
 	UpdateTime string `json:"update_time"`
 }
 
-func NewDisplayedArticle(article *Article) DisplayedArticle {
-	return DisplayedArticle{
-		article.ID,
-		"",
-		"",
-		article.Title,
-		article.Slug,
-		article.Content,
-		article.CreatedAt.Format(time.RFC3339),
-		article.UpdatedAt.Format(time.RFC3339),
-	}
-}
-
 func (article *Article) Update(update *Article) {
 	if update.UserID != 0 {
 		article.UserID = update.UserID
@@ -53,5 +40,18 @@ func (article *Article) Update(update *Article) {
 
 	if update.Content != "" {
 		article.Content = update.Content
+	}
+}
+
+func NewDisplayedArticle(article *Article) DisplayedArticle {
+	return DisplayedArticle{
+		article.ID,
+		"",
+		"",
+		article.Title,
+		article.Slug,
+		article.Content,
+		time.Time(article.CreatedAt).Format(time.RFC3339),
+		time.Time(article.UpdatedAt).Format(time.RFC3339),
 	}
 }

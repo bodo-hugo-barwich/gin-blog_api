@@ -48,6 +48,9 @@ jobs:
               -re "s/<user_password>/${DB_PASSWORD}/" \
               -re "s/<param_name>/charset/" \
               -re "s/<param_value>/utf8mb4/" > .env.test
+
+            # Add `parseTime` option to MySQL DSN
+            echo "    parseTime: 'True'" >> .env.test
           else 
             cat .env_sample | sed -re "s/<database_driver>/${{ matrix.database }}/" \
               -re "s/<database_host>/${DB_HOST}/" \
@@ -58,6 +61,8 @@ jobs:
               -re "s/params:/# params:/" \
               -re "s/<param_name>/# <param_name>/" > .env.test
           fi
+          
+          cat .env.test
         env:
           # The hostname used to communicate with the PostgreSQL service container
           DB_HOST: localhost
@@ -86,7 +91,7 @@ jobs:
             fi			
           done
 
-          echo "* Service 'db' logs:"
+          echo "* Service 'db_postgres' logs:"
           docker logs "${{ job.services.db_postgres.id }}"
 
           if [ $ping -eq 1 ]; then
