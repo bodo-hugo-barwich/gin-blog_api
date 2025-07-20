@@ -26,9 +26,7 @@ func ConnectDatabase(config *config.AppConfig) (*gorm.DB, error) {
 		dsn := fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable",
 			config.DB.Host, config.DB.Name, config.DB.User, config.DB.Password)
 
-		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Info),
-		})
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	case "mysql":
 		// Connect to the MySQL database
 		paramsBuilder := strings.Builder{}
@@ -49,13 +47,19 @@ func ConnectDatabase(config *config.AppConfig) (*gorm.DB, error) {
 		dsn := fmt.Sprintf("%s:%s@%s(%s)/%s?%s",
 			config.DB.User, config.DB.Password, config.DB.Protocol, host, config.DB.Name, paramsBuilder.String())
 
-		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Info),
-		})
+		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	}
 
 	if err != nil {
 		panic("Failed to connect to database")
+	}
+
+	ginMode := gin.Mode()
+
+	if ginMode == "test" || ginMode == "debug" {
+		db.Logger = db.Logger.LogMode(logger.Info)
+	} else {
+		db.Logger = db.Logger.LogMode(logger.Silent)
 	}
 
 	return db, err

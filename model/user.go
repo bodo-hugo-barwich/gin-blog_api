@@ -9,6 +9,10 @@ import (
 )
 
 type (
+	//==========================================================================
+	// Structure User Declaration
+
+	// User - Structure for the Admin / Editor accounts
 	User struct {
 		gorm.Model
 		Name     string `json:"name"`
@@ -19,12 +23,20 @@ type (
 		Articles []Article
 	}
 
+	//==========================================================================
+	// Structure DisplayedUser Declaration
+
+	// DisplayedUser - Structure for the public displayed User information
 	DisplayedUser struct {
 		Name  string `json:"name"`
 		Slug  string `json:"slug"`
 		Email string `json:"email"`
 	}
 
+	//==========================================================================
+	// Structure Login Declaration
+
+	// Login - Structure for the storing Login information
 	Login struct {
 		Login    string `json:"login"`
 		Password string `json:"password"`
@@ -33,6 +45,9 @@ type (
 
 var ENCRYPTIONSALT string = "gin-blog"
 var ENCRYPTIONKEY []byte = []byte("gin-blog")
+
+//==========================================================================
+// Structure User Implementation
 
 func (user *User) Update(update *User) {
 	if update.Name != "" {
@@ -78,6 +93,9 @@ func (user *User) AuthLogin(logindata *Login, salt string) bool {
 	return user.Auth(logindata.Login, logindata.Password, salt)
 }
 
+//==========================================================================
+// Structure DisplayedUser Implementation
+
 func NewDisplayedUser(user *User) DisplayedUser {
 	return DisplayedUser{
 		user.Name,
@@ -85,6 +103,9 @@ func NewDisplayedUser(user *User) DisplayedUser {
 		user.Email,
 	}
 }
+
+//==========================================================================
+// Auxilliary Funtions
 
 func EncryptPassword(password string, salt string) string {
 	length := len(password)
