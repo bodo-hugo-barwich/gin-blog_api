@@ -31,6 +31,9 @@ func ConnectDatabase(config *config.AppConfig) (*gorm.DB, error) {
 		// Connect to the MySQL database
 		paramsBuilder := strings.Builder{}
 
+		// Add `parseTime` for GORM Model support
+		paramsBuilder.WriteString("parseTime=True&")
+
 		for param, value := range config.DB.Params {
 			paramsBuilder.WriteString(fmt.Sprintf("%s=%s&", param, value))
 		}
