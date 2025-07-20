@@ -10,6 +10,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 
 	"gin-blog/config"
 	"gin-blog/controllers"
@@ -25,7 +26,9 @@ func ConnectDatabase(config *config.AppConfig) (*gorm.DB, error) {
 		dsn := fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable",
 			config.DB.Host, config.DB.Name, config.DB.User, config.DB.Password)
 
-		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Info),
+		})
 	case "mysql":
 		// Connect to the MySQL database
 		paramsBuilder := strings.Builder{}
@@ -46,7 +49,9 @@ func ConnectDatabase(config *config.AppConfig) (*gorm.DB, error) {
 		dsn := fmt.Sprintf("%s:%s@%s(%s)/%s?%s",
 			config.DB.User, config.DB.Password, config.DB.Protocol, host, config.DB.Name, paramsBuilder.String())
 
-		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Info),
+		})
 	}
 
 	if err != nil {
