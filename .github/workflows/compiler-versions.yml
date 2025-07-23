@@ -79,13 +79,13 @@ jobs:
 
           if [ "${{ matrix.database }}" == "mysql" ]; then
             # Set default password
-            echo -e "[client]\npassword=secret" > $HOME/.my.cnf
+            echo -e "[client]\nhost=127.0.0.1\nprotocol=TCP\nuser=gin_blog\npassword=secret" | tee $HOME/.my.cnf
             chmod 600 $HOME/.my.cnf
             ls -lah $HOME/.my.cnf
 
             while [[ $ping -ne 1 && $ping_count -lt $ping_max_count ]]; do
               ping_count=$((ping_count + 1))
-              ping_info=`mysql --defaults-file=$HOME/.my.cnf -h localhost -u gin_blog -p -e 'select 1 as ping;' 2>&1` || true
+              ping_info=`mysql --defaults-file=$HOME/.my.cnf -e 'select 1 as ping;' 2>&1` || true
               echo "Ping No. $ping_count:"
               echo -e "$ping_info"
               ping=`echo "$ping_info" | grep -A2 -i "ping" | grep -oE "[0-9]+"` || true
@@ -104,9 +104,9 @@ jobs:
 
             if [ $ping -eq 1 ]; then
               echo "* Service 'db_mysql' databases:"
-              mysql --defaults-file=$HOME/.my.cnf -h localhost -u gin_blog -p -Be 'show databases;'
+              mysql --defaults-file=$HOME/.my.cnf -Be 'show databases;'
               echo "* Database 'gin_blog' tables:"
-              mysql --defaults-file=$HOME/.my.cnf -h localhost -u gin_blog -p gin_blog -Be 'show tables;'
+              mysql --defaults-file=$HOME/.my.cnf gin_blog -Be 'show tables;'
             fi
           else
             while [[ $ping -ne 1 && $ping_count -lt $ping_max_count ]]; do
