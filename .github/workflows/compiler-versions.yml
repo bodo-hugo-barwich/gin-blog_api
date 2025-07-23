@@ -76,10 +76,14 @@ jobs:
           ping=0
           ping_max_count=10
           ping_count=0
+
           if [ "${{ matrix.database }}" == "mysql" ]; then
+            # Set default password
+            echo -e "[client]\npassword=secret" > ~/.my.cnf
+
             while [[ $ping -ne 1 && $ping_count -lt $ping_max_count ]]; do
               ping_count=$((ping_count + 1))
-              ping_info=`mysql -u gin_blog -psecret -e 'select 1 as ping;' 2>&1` || true
+              ping_info=`mysql -u gin_blog -p --defaults-file=~/.my.cnf -e 'select 1 as ping;' 2>&1` || true
               echo "Ping No. $ping_count:"
               echo -e "$ping_info"
               ping=`echo "$ping_info" | grep -A2 -i "ping" | grep -oE "[0-9]+"` || true
@@ -98,9 +102,9 @@ jobs:
 
             if [ $ping -eq 1 ]; then
               echo "* Service 'db_mysql' databases:"
-              mysql -u gin_blog -psecret -e 'show databases;'
+              mysql -u gin_blog -p --defaults-file=~/.my.cnf -Be 'show databases;'
               echo "* Database 'gin_blog' tables:"
-              mysql -u gin_blog -psecret gin_blog -e 'show tables;'
+              mysql -u gin_blog -p --defaults-file=~/.my.cnf gin_blog -Be 'show tables;'
             fi
           else
             while [[ $ping -ne 1 && $ping_count -lt $ping_max_count ]]; do
@@ -142,7 +146,12 @@ jobs:
           go build -v ./...
 
       - name: Test
-        run: go test -v ./...
+        run: |
+          delay=$((RANDOM%10)) ;
+          echo "* Test: Delaying '$delay' s ..."
+          sleep $delay
+          echo "* Test: Starting ..."
+          go test -v ./...
         env:
           # The hostname used to communicate with the PostgreSQL service container
           DB_HOST: localhost
