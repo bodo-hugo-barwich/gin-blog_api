@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main ]
   workflow_dispatch:
-     branches: [ main ]  
+     branches: [ main ]
 
 jobs:
 
@@ -52,7 +52,7 @@ jobs:
 
             # Add `parseTime` option to MySQL DSN
             echo "    parseTime: 'True'" >> .env.test
-          else 
+          else
             cat .env_sample | sed -re "s/<database_driver>/${{ matrix.database }}/" \
               -re "s/<database_host>/${DB_HOST}/" \
               -re "s/<connection_protocol>/tcp/" \
@@ -62,7 +62,7 @@ jobs:
               -re "s/params:/# params:/" \
               -re "s/<param_name>/# <param_name>/" > .env.test
           fi
-          
+
           cat .env.test
         env:
           # The hostname used to communicate with the PostgreSQL service container
@@ -76,28 +76,58 @@ jobs:
           ping=0
           ping_max_count=10
           ping_count=0
-          while [[ $ping -ne 1 && $ping_count -lt $ping_max_count ]]; do
-            ping_count=$((ping_count + 1))
-            ping_info=`psql "postgresql://gin_blog:secret@localhost" -c 'select 1 as ping;' 2>&1` || true
-            echo "Ping No. $ping_count:"
-            echo -e "$ping_info"
-            ping=`echo "$ping_info" | grep -A2 -i "ping" | grep -oE "[0-9]+"` || true
-            echo "Ping Result: '$ping'"
-            
-            if [ -z "$ping" ]; then
-              ping=0
+          if [ "${{ matrix.database }}" == "mysql" ]; then
+            while [[ $ping -ne 1 && $ping_count -lt $ping_max_count ]]; do
+              ping_count=$((ping_count + 1))
+              ping_info=`mysql -u gin_blog -psecret -e 'select 1 as ping;' 2>&1` || true
+              echo "Ping No. $ping_count:"
+              echo -e "$ping_info"
+              ping=`echo "$ping_info" | grep -A2 -i "ping" | grep -oE "[0-9]+"` || true
+              echo "Ping Result: '$ping'"
 
-              # grant time to start up
-              sleep 1
-            fi			
-          done
+              if [ -z "$ping" ]; then
+                ping=0
 
-          echo "* Service 'db_postgres' logs:"
-          docker logs "${{ job.services.db_postgres.id }}"
+                # grant time to start up
+                sleep 1
+              fi
+            done
 
-          if [ $ping -eq 1 ]; then
-            psql "postgresql://gin_blog:secret@localhost" -c '\l'
-            psql "postgresql://gin_blog:secret@localhost" -c '\c gin_blog' -c '\d'
+            echo "* Service 'db_mysql' logs:"
+            docker logs "${{ job.services.db_mysql.id }}"
+
+            if [ $ping -eq 1 ]; then
+              echo "* Service 'db_mysql' databases:"
+              mysql -u gin_blog -psecret -e 'show databases;'
+              echo "* Database 'gin_blog' tables:"
+              mysql -u gin_blog -psecret gin_blog -e 'show tables;'
+            fi
+          else
+            while [[ $ping -ne 1 && $ping_count -lt $ping_max_count ]]; do
+              ping_count=$((ping_count + 1))
+              ping_info=`psql "postgresql://gin_blog:secret@localhost" -c 'select 1 as ping;' 2>&1` || true
+              echo "Ping No. $ping_count:"
+              echo -e "$ping_info"
+              ping=`echo "$ping_info" | grep -A2 -i "ping" | grep -oE "[0-9]+"` || true
+              echo "Ping Result: '$ping'"
+
+              if [ -z "$ping" ]; then
+                ping=0
+
+                # grant time to start up
+                sleep 1
+              fi
+            done
+
+            echo "* Service 'db_postgres' logs:"
+            docker logs "${{ job.services.db_postgres.id }}"
+
+            if [ $ping -eq 1 ]; then
+              echo "* Service 'db_postgres' databases:"
+              psql "postgresql://gin_blog:secret@localhost" -c '\l'
+              echo "* Database 'gin_blog' tables:"
+              psql "postgresql://gin_blog:secret@localhost" -c '\c gin_blog' -c '\d'
+            fi
           fi
 
       - name: Set up Go
