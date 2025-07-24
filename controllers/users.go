@@ -15,15 +15,23 @@ import (
 
 func MigrateUsers(db *gorm.DB) error {
 
+	//Copy reference to global database
 	if DATABASE == nil {
 		DATABASE = db
 	}
 
-	// Automigrate the User model
-	err := db.AutoMigrate(&model.User{})
+	var err error
 
-	if err != nil {
-		fmt.Println("Model 'User': Auto Migration failed")
+	// Check table for `User` exists or not
+	if !db.Migrator().HasTable(&model.User{}) {
+		// Automigrate the User model
+		err = db.AutoMigrate(&model.User{})
+
+		if err != nil {
+			fmt.Println("Model 'User': Auto Migration failed")
+		}
+	} else {
+		fmt.Println("Model 'User': Table already exists")
 	}
 
 	return err

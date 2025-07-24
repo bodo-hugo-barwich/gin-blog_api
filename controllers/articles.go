@@ -20,11 +20,18 @@ func MigrateArticles(db *gorm.DB) error {
 		DATABASE = db
 	}
 
-	// Automigrate the Article model
-	err := db.AutoMigrate(&model.Article{})
+	var err error
 
-	if err != nil {
-		fmt.Println("Model 'Article': Auto Migration failed")
+	// Check table for `User` exists or not
+	if !db.Migrator().HasTable(&model.Article{}) {
+		// Automigrate the Article model
+		err = db.AutoMigrate(&model.Article{})
+
+		if err != nil {
+			fmt.Println("Model 'Article': Auto Migration failed")
+		}
+	} else {
+		fmt.Println("Model 'Article': Table already exists")
 	}
 
 	return err
