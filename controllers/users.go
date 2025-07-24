@@ -39,7 +39,12 @@ func MigrateUsers(db *gorm.DB) error {
 		err = db.AutoMigrate(&model.User{})
 
 		if err != nil {
-			fmt.Println("Model 'User': Auto Migration failed")
+			// Ignore already exist error
+			if strings.Contains(err.Message, "already exists" {
+				err = nil
+			} else {
+				fmt.Println("Model 'User': Auto Migration failed")
+			}
 		}
 	} else {
 		fmt.Println("Model 'User': Table already exists")

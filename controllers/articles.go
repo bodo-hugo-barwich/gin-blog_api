@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -30,7 +31,12 @@ func MigrateArticles(db *gorm.DB) error {
 		err = db.AutoMigrate(&model.Article{})
 
 		if err != nil {
-			fmt.Println("Model 'Article': Auto Migration failed")
+			// Ignore already exists error
+			if strings.Contains(err.Message, "already exists") {
+				err = nil
+			} else {
+				fmt.Println("Model 'Article': Auto Migration failed")
+			}
 		}
 	} else {
 		fmt.Println("Model 'Article': Table already exists")
