@@ -40,7 +40,7 @@ func MigrateUsers(db *gorm.DB) error {
 
 		if err != nil {
 			// Ignore already exist error
-			if strings.Contains(err.Message, "already exists") {
+			if strings.Contains(err.Error(), "already exists") {
 				fmt.Println("Model 'User': Table already exists")
 
 				err = nil
@@ -49,6 +49,7 @@ func MigrateUsers(db *gorm.DB) error {
 			}
 		}
 	} else {
+		fmt.Println("Model 'User': Table already exists")
 	}
 
 	return err
