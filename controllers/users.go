@@ -24,7 +24,7 @@ func MigrateUsers(db *gorm.DB) error {
 
 	// Check table for `User` exists or not
 	if !db.Migrator().HasTable(&model.User{}) {
-		fmt.Println("Model 'Article': Table creating ...")
+		fmt.Println("Model 'User': Table creating ...")
 
 		// Automigrate the User model
 		err = db.AutoMigrate(&model.User{})
