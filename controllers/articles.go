@@ -33,6 +33,8 @@ func MigrateArticles(db *gorm.DB) error {
 		if err != nil {
 			// Ignore already exists error
 			if strings.Contains(err.Message, "already exists") {
+				fmt.Println("Model 'Article': Table already exists")
+
 				err = nil
 			} else {
 				fmt.Println("Model 'Article': Auto Migration failed")
