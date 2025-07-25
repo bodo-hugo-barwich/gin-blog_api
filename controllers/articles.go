@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 
 	"gin-blog/config"
@@ -21,7 +22,15 @@ func MigrateArticles(db *gorm.DB) error {
 		DATABASE = db
 	}
 
-	var err error
+	fmt.Println("Model 'User': Tables checking ...")
+
+	tables, err := db.Migrator().GetTables()
+
+	if err != nil {
+		fmt.Println("Model 'Article': Tables Check failed")
+	}
+
+	fmt.Printf("Model 'Article': Tables: %#v\n", tables)
 
 	// Check table for `User` exists or not
 	if !db.Migrator().HasTable(&model.Article{}) {
@@ -31,11 +40,24 @@ func MigrateArticles(db *gorm.DB) error {
 		err = db.AutoMigrate(&model.Article{})
 
 		if err != nil {
+			var pgErr *pgconn.PgError
+
+			fmt.Printf("Model 'Article': Error Message: '%s'\n", err.Error())
+
 			// Ignore already exists error
 			if strings.Contains(err.Error(), "already exists") {
 				fmt.Println("Model 'Article': Table already exists")
 
 				err = nil
+			} else if errors.As(err, &pgErr) {
+				fmt.Println(pgErr.Code)    // => 42601
+				fmt.Println(pgErr.Message) // => syntax error at end of input
+
+				if strings.Contains(pgErr.Detail, "already exists") {
+					fmt.Println("Model 'Article': Table already exists")
+
+					err = nil
+				}
 			} else {
 				fmt.Println("Model 'Article': Auto Migration failed")
 			}

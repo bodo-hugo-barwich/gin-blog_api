@@ -30,7 +30,7 @@ func MigrateUsers(db *gorm.DB) error {
 		fmt.Println("Model 'User': Tables Check failed")
 	}
 
-	fmt.Printf("Model 'Users': Tables: %#v\n", tables)
+	fmt.Printf("Model 'User': Tables: %#v\n", tables)
 
 	// Check table for `User` exists or not
 	if !db.Migrator().HasTable(&model.User{}) {
@@ -54,7 +54,7 @@ func MigrateUsers(db *gorm.DB) error {
 				fmt.Println(pgErr.Message) // => syntax error at end of input
 				fmt.Println(pgErr.Code)    // => 42601
 
-				if strings.Contains(pgErr.Message, "already exists") {
+				if strings.Contains(pgErr.Detail, "already exists") {
 					fmt.Println("Model 'User': Table already exists")
 
 					err = nil
