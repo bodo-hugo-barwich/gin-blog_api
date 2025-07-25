@@ -22,7 +22,7 @@ func MigrateArticles(db *gorm.DB) error {
 		DATABASE = db
 	}
 
-	fmt.Println("Model 'User': Tables checking ...")
+	fmt.Println("Model 'Article': Tables checking ...")
 
 	tables, err := db.Migrator().GetTables()
 
