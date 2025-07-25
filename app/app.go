@@ -70,6 +70,8 @@ func ConnectDatabase(config *config.AppConfig) (*gorm.DB, error) {
 
 func InitializeDatabase(db *gorm.DB) error {
 
+	fmt.Println("InitializeDatabase() - go ...")
+
 	// Create Users Structure
 	err := controllers.MigrateUsers(db)
 
