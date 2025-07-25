@@ -2,29 +2,75 @@ package app
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 
 	"gin-blog/config"
 	"gin-blog/controllers"
 )
 
 func ConnectDatabase(config *config.AppConfig) (*gorm.DB, error) {
-	// Connect to the PostgreSQL database
-	dsn := fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable",
-		config.DB.Host, config.DB.Name, config.DB.User, config.DB.Password)
+	var db *gorm.DB = nil
+	var err error = nil
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	switch config.DB.Driver {
+	case "postgres":
+		// Connect to the PostgreSQL database
+		dsn := fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable",
+			config.DB.Host, config.DB.Name, config.DB.User, config.DB.Password)
+
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	case "mysql":
+		// Connect to the MySQL database
+		paramsBuilder := strings.Builder{}
+
+		// Add `parseTime` for GORM Model support
+		paramsBuilder.WriteString("parseTime=True&")
+
+		for param, value := range config.DB.Params {
+			paramsBuilder.WriteString(fmt.Sprintf("%s=%s&", param, value))
+		}
+
+		var host string
+
+		switch config.DB.Protocol {
+		case "tcp":
+			host = config.DB.Host + ":3306"
+		case "unix":
+			host = config.DB.Host
+		}
+
+		dsn := fmt.Sprintf("%s:%s@%s(%s)/%s?%s",
+			config.DB.User, config.DB.Password, config.DB.Protocol, host, config.DB.Name, paramsBuilder.String())
+
+		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	}
 
 	if err != nil {
 		panic("Failed to connect to database")
 	}
+
+	ginMode := gin.Mode()
+
+	if ginMode == "test" || ginMode == "debug" {
+		db.Logger = db.Logger.LogMode(logger.Info)
+	} else {
+		db.Logger = db.Logger.LogMode(logger.Silent)
+	}
+
 	return db, err
 }
 
 func InitializeDatabase(db *gorm.DB) error {
+
+	fmt.Println("InitializeDatabase() - go ...")
 
 	// Create Users Structure
 	err := controllers.MigrateUsers(db)
@@ -85,7 +131,13 @@ func Start() error {
 
 	router := RegisterRoutes(&appConfig)
 
-	router.Run(":3000")
+	server_port := os.Getenv("PORT")
+
+	if server_port == "" {
+		server_port = strconv.Itoa(int(appConfig.Port))
+	}
+
+	router.Run(":" + server_port)
 
 	return err
 }

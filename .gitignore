@@ -1,12 +1,22 @@
-#Exclude Project Files
+# Exclude Project Files
 .project
+.pydevproject
 *.adoc
 Cargo.lock
 
-#Exclude Local Configurations
+# Exclude Local Configurations
 docker-compose.yml
 .env
 .env.*
 
-#Exclude Build Files
+# Exclude Build Files
 main
+gin-blog
+bin/*
+
+# Exclude Databases
+data/*
+
+# Exclude Activity Logs
+log/*
+

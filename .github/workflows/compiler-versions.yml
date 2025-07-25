@@ -4,18 +4,20 @@ on:
   pull_request:
     branches: [ main ]
   workflow_dispatch:
-     branches: [ main ]  
+     branches: [ main ]
 
 jobs:
 
   compiler-version-testing:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     strategy:
+      fail-fast: false
       matrix:
-        go-version: [ 1.19.8, 1.20.0, 1.22.3 ]
+        go-version: [ 1.23.11, 1.24.4 ]
+        database: [ 'postgres', 'mysql' ]
 
     services:
-      db:
+      db_postgres:
         image: postgres:16.3-alpine3.20
         ports:
           - 5432:5432
@@ -23,16 +25,45 @@ jobs:
           COMPONENT: ginblog_db
           POSTGRES_USER: gin_blog
           POSTGRES_PASSWORD: secret
+      db_mysql:
+        image: yobasystems/alpine-mariadb:10.11.10-amd64
+        ports:
+          - 3306:3306
+        env:
+          COMPONENT: ginblog_db
+          MYSQL_DATABASE: gin_blog
+          MYSQL_USER: gin_blog
+          MYSQL_PASSWORD: secret
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Config App
+      - name: Config App '${{ matrix.database }}'
         run: |
-          cat .env_sample | sed -re "s/<database_host>/${DB_HOST}/" \
-            -re "s/<database_name>/${DB_NAME}/" \
-            -re "s/<database_user>/${DB_USER}/" \
-            -re "s/<user_password>/${DB_PASSWORD}/" > .env.test
+          if [ "${{ matrix.database }}" == "mysql" ]; then
+            cat .env_sample | sed -re "s/<database_driver>/${{ matrix.database }}/" \
+              -re "s/<database_host>/${DB_HOST}/" \
+              -re "s/<connection_protocol>/tcp/" \
+              -re "s/<database_name>/${DB_NAME}/" \
+              -re "s/<database_user>/${DB_USER}/" \
+              -re "s/<user_password>/${DB_PASSWORD}/" \
+              -re "s/<param_name>/charset/" \
+              -re "s/<param_value>/utf8mb4/" > .env.test
+
+            # Add `parseTime` option to MySQL DSN
+            echo "    parseTime: 'True'" >> .env.test
+          else
+            cat .env_sample | sed -re "s/<database_driver>/${{ matrix.database }}/" \
+              -re "s/<database_host>/${DB_HOST}/" \
+              -re "s/<connection_protocol>/tcp/" \
+              -re "s/<database_name>/${DB_NAME}/" \
+              -re "s/<database_user>/${DB_USER}/" \
+              -re "s/<user_password>/${DB_PASSWORD}/" \
+              -re "s/params:/# params:/" \
+              -re "s/<param_name>/# <param_name>/" > .env.test
+          fi
+
+          cat .env.test
         env:
           # The hostname used to communicate with the PostgreSQL service container
           DB_HOST: localhost
@@ -45,28 +76,64 @@ jobs:
           ping=0
           ping_max_count=10
           ping_count=0
-          while [[ $ping -ne 1 && $ping_count -lt $ping_max_count ]]; do
-            ping_count=$((ping_count + 1))
-            ping_info=`psql "postgresql://gin_blog:secret@localhost" -c 'select 1 as ping;' 2>&1` || true
-            echo "Ping No. $ping_count:"
-            echo -e "$ping_info"
-            ping=`echo "$ping_info" | grep -A2 -i "ping" | grep -oE "[0-9]+"` || true
-            echo "Ping Result: '$ping'"
-            
-            if [ -z "$ping" ]; then
-              ping=0
 
-              # grant time to start up
-              sleep 1
-            fi			
-          done
+          if [ "${{ matrix.database }}" == "mysql" ]; then
+            # Set default password
+            echo -e "[client]\nhost=127.0.0.1\nprotocol=TCP\nuser=gin_blog\npassword=secret" | tee $HOME/.my.cnf
+            chmod 600 $HOME/.my.cnf
+            ls -lah $HOME/.my.cnf
 
-          echo "* Service 'db' logs:"
-          docker logs "${{ job.services.db.id }}"
+            while [[ $ping -ne 1 && $ping_count -lt $ping_max_count ]]; do
+              ping_count=$((ping_count + 1))
+              ping_info=`mysql --defaults-file=$HOME/.my.cnf -e 'select 1 as ping;' 2>&1` || true
+              echo "Ping No. $ping_count:"
+              echo -e "$ping_info"
+              ping=`echo "$ping_info" | grep -A2 -i "ping" | grep -oE "[0-9]+"` || true
+              echo "Ping Result: '$ping'"
 
-          if [ $ping -eq 1 ]; then
-            psql "postgresql://gin_blog:secret@localhost" -c '\l'
-            psql "postgresql://gin_blog:secret@localhost" -c '\c gin_blog' -c '\d'
+              if [ -z "$ping" ]; then
+                ping=0
+
+                # grant time to start up
+                sleep 1
+              fi
+            done
+
+            echo "* Service 'db_mysql' logs:"
+            docker logs "${{ job.services.db_mysql.id }}"
+
+            if [ $ping -eq 1 ]; then
+              echo "* Service 'db_mysql' databases:"
+              mysql --defaults-file=$HOME/.my.cnf -Be 'show databases;'
+              echo "* Database 'gin_blog' tables:"
+              mysql --defaults-file=$HOME/.my.cnf gin_blog -Be 'show tables;'
+            fi
+          else
+            while [[ $ping -ne 1 && $ping_count -lt $ping_max_count ]]; do
+              ping_count=$((ping_count + 1))
+              ping_info=`psql "postgresql://gin_blog:secret@localhost" -c 'select 1 as ping;' 2>&1` || true
+              echo "Ping No. $ping_count:"
+              echo -e "$ping_info"
+              ping=`echo "$ping_info" | grep -A2 -i "ping" | grep -oE "[0-9]+"` || true
+              echo "Ping Result: '$ping'"
+
+              if [ -z "$ping" ]; then
+                ping=0
+
+                # grant time to start up
+                sleep 1
+              fi
+            done
+
+            echo "* Service 'db_postgres' logs:"
+            docker logs "${{ job.services.db_postgres.id }}"
+
+            if [ $ping -eq 1 ]; then
+              echo "* Service 'db_postgres' databases:"
+              psql "postgresql://gin_blog:secret@localhost" -c '\l'
+              echo "* Database 'gin_blog' tables:"
+              psql "postgresql://gin_blog:secret@localhost" -c '\c gin_blog' -c '\d'
+            fi
           fi
 
       - name: Set up Go
@@ -75,10 +142,18 @@ jobs:
           go-version: '${{ matrix.go-version }}'
 
       - name: Build
-        run: go build -v ./...
+        run: |
+          go get -u ./...
+          go mod tidy
+          go build -v ./...
 
       - name: Test
-        run: go test -v ./...
+        run: |
+          delay=$((RANDOM%10)) ;
+          echo "* Test: Delaying '$delay' s ..."
+          sleep $delay
+          echo "* Test: Starting ..."
+          go test -v ./...
         env:
           # The hostname used to communicate with the PostgreSQL service container
           DB_HOST: localhost

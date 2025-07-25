@@ -89,12 +89,24 @@ func TestDisplayUsers(t *testing.T) {
 
 	testAdmin.Password = loginPassword
 
+	if testAdmin.ID == 0 {
+		t.Errorf("User  '%s / %s': User could not be created!", testAdmin.Login, testAdmin.Name)
+	} else {
+		fmt.Printf("User '%s / %s': User (%d) was created\n", testAdmin.Login, testAdmin.Name, testAdmin.ID)
+	}
+
 	// Create 3 Users
 	for idx, user := range testUsers {
 		db.Create(&user)
 
 		// Set assigned user id
 		testUsers[idx].ID = user.ID
+
+		if user.ID == 0 {
+			t.Errorf("User '%s / %s': User could not be created!", user.Login, user.Name)
+		} else {
+			fmt.Printf("User '%s / %s': User (%d) was created\n", user.Login, user.Name, user.ID)
+		}
 	}
 
 	//-------------------------------------
@@ -226,6 +238,12 @@ func TestCreateUser(t *testing.T) {
 
 	testAdmin.Password = loginPassword
 
+	if testAdmin.ID == 0 {
+		t.Errorf("User  '%s / %s': User could not be created!", testAdmin.Login, testAdmin.Name)
+	} else {
+		fmt.Printf("User '%s / %s': User (%d) was created\n", testAdmin.Login, testAdmin.Name, testAdmin.ID)
+	}
+
 	//-------------------------------------
 	// Test User Create Route
 
@@ -333,6 +351,12 @@ func TestUpdateUser(t *testing.T) {
 	createRestoreUser(db, &testAdmin)
 
 	testAdmin.Password = loginPassword
+
+	if testAdmin.ID == 0 {
+		t.Errorf("User  '%s / %s': User could not be created!", testAdmin.Login, testAdmin.Name)
+	} else {
+		fmt.Printf("User '%s / %s': User (%d) was created\n", testAdmin.Login, testAdmin.Name, testAdmin.ID)
+	}
 
 	// Create Test User
 	db.Create(&testUser)
@@ -443,6 +467,12 @@ func TestDeleteUser(t *testing.T) {
 
 	testAdmin.Password = loginPassword
 
+	if testAdmin.ID == 0 {
+		t.Errorf("User  '%s / %s': User could not be created!", testAdmin.Login, testAdmin.Name)
+	} else {
+		fmt.Printf("User '%s / %s': User (%d) was created\n", testAdmin.Login, testAdmin.Name, testAdmin.ID)
+	}
+
 	// Create Test User
 	db.Create(&testUser)
 
@@ -518,6 +548,8 @@ func createRestoreUser(db *gorm.DB, searchUser *model.User) {
 	}
 
 	if resUser, err = controllers.GetUserByLogin(searchUser.Login); resUser == nil || err != nil {
+		fmt.Printf("Login '%s / %s': Error: %#v\n", searchUser.Login, searchUser.Name, err)
+
 		var restore model.User
 
 		db.Unscoped().Where("login = ?", searchUser.Login).Where("deleted_at IS NOT NULL").Find(&restore)
@@ -530,11 +562,15 @@ func createRestoreUser(db *gorm.DB, searchUser *model.User) {
 
 			// Re-enable user account
 			db.Model(&restore).Unscoped().Where("id = ?", restore.ID).Update("deleted_at", nil)
+		} else {
+			resUser = nil
 		}
 	}
 
 	if resUser == nil {
 		db.Create(searchUser)
+
+		fmt.Printf("Login '%s / %s': Created: %#v\n", searchUser.Login, searchUser.Name, searchUser)
 
 		resUser = searchUser
 	}

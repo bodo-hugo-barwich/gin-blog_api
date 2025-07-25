@@ -73,12 +73,24 @@ func TestDisplayArticles(t *testing.T) {
 	// Create 1 test user
 	db.Create(&testUser)
 
+	if testUser.ID == 0 {
+		t.Errorf("User '%s / %s': User could not be created!", testUser.Login, testUser.Slug)
+	} else {
+		fmt.Printf("User '%s / %s': User (%d) was created\n", testUser.Login, testUser.Slug, testUser.ID)
+	}
+
 	// Create 3 articles
 	for idx, article := range testArticles {
 		// Set the user id of the test user
 		article.UserID = testUser.ID
 
 		db.Create(&article)
+
+		if article.ID == 0 {
+			t.Errorf("Article '%s': Article could not be created!", article.Slug)
+		} else {
+			fmt.Printf("Article '%s': Article (%d) was created\n", article.Slug, article.ID)
+		}
 
 		// Set assigned article id
 		testArticles[idx].ID = article.ID
