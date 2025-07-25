@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 
 	"gin-blog/config"
@@ -39,11 +40,24 @@ func MigrateUsers(db *gorm.DB) error {
 		err = db.AutoMigrate(&model.User{})
 
 		if err != nil {
+			var pgErr *pgconn.PgError
+
+			fmt.Printf("Model 'User': Error Message: '%s'\n", err.Error())
+
 			// Ignore already exist error
 			if strings.Contains(err.Error(), "already exists") {
 				fmt.Println("Model 'User': Table already exists")
 
 				err = nil
+			} else if errors.As(err, &pgErr) {
+				fmt.Println(pgErr.Message) // => syntax error at end of input
+				fmt.Println(pgErr.Code)    // => 42601
+
+				if strings.Contains(pgErr.Message, "already exists") {
+					fmt.Println("Model 'User': Table already exists")
+
+					err = nil
+				}
 			} else {
 				fmt.Println("Model 'User': Auto Migration failed")
 			}
