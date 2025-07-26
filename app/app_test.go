@@ -61,7 +61,7 @@ func TestDisplayArticles(t *testing.T) {
 		t.Fatalf("Database Connection: Connection failed! Message: %#v", err)
 	}
 
-	if err = InitializeDatabase(db); err != nil {
+	if err = InitializeDatabase(db, &appConfig); err != nil {
 		t.Fatalf("Database Setup: Setup failed! Message: %#v", err)
 	}
 
