@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -49,6 +50,148 @@ var testUsers = []model.User{
 
 var resListUsers map[uint]*model.User = make(map[uint]*model.User)
 
+func TestEnableAdmin(t *testing.T) {
+	var appConfig config.AppConfig
+	var db *gorm.DB
+	var token string
+	var err error
+
+	gin.SetMode(gin.TestMode)
+
+	if appConfig, err = config.ReadConfigFile(); err != nil {
+		t.Fatalf("Application Configuration: Configuration is missing! Message: %#v", err)
+	}
+
+	if db, err = ConnectDatabase(&appConfig); err != nil {
+		t.Fatalf("Database Connection: Connection failed! Message: %#v", err)
+	}
+
+	if err = controllers.MigrateUsers(db); err != nil {
+		t.Fatalf("Users Migration: Migration failed! Message: %#v", err)
+	}
+
+	//-------------------------------------
+	// Enable Admin Account
+
+	// Reset Admin User ID
+	testAdmin.ID = 0
+
+	if err = controllers.EnableAdminUser(testAdmin.Login, testAdmin.Email, testAdmin.Password); err != nil {
+		t.Fatalf("Admin Account: Account Creation failed! Message: %#v", err)
+	}
+
+	//-------------------------------------
+	// Check Admin Login
+
+	token, err = loginUser(gin.Default(), &testAdmin, &appConfig, t)
+
+	if err != nil {
+		t.Errorf("Login '%s': failed! Message: %#v", testAdmin.Login, err)
+	}
+
+	if token == "" {
+		t.Errorf("Login '%s': Token is empty!", testAdmin.Login)
+	}
+}
+
+func TestEnvironmentEnableAdmin(t *testing.T) {
+	var appConfig config.AppConfig
+	var db *gorm.DB
+	var token string
+	var err error
+
+	gin.SetMode(gin.TestMode)
+
+	if appConfig, err = config.ReadConfigFile(); err != nil {
+		t.Fatalf("Application Configuration: Configuration is missing! Message: %#v", err)
+	}
+
+	if db, err = ConnectDatabase(&appConfig); err != nil {
+		t.Fatalf("Database Connection: Connection failed! Message: %#v", err)
+	}
+
+	//-------------------------------------
+	// Set Admin Account Config
+
+	// Reset Admin User ID
+	testAdmin.ID = 0
+
+	os.Setenv("GINBLOG_ADMIN_USER", testAdmin.Login)
+	os.Setenv("GINBLOG_ADMIN_EMAIL", testAdmin.Email)
+	os.Setenv("GINBLOG_ADMIN_PASSWORD", testAdmin.Password)
+
+	appConfig.Admin.Login = ""
+	appConfig.Admin.Email = ""
+	appConfig.Admin.Password = ""
+
+	//-------------------------------------
+	// Initialize Database
+
+	if err = InitializeDatabase(db, &appConfig); err != nil {
+		t.Fatalf("Database Setup: Setup failed! Message: %#v", err)
+	}
+
+	//-------------------------------------
+	// Check Admin Login
+
+	token, err = loginUser(gin.Default(), &testAdmin, &appConfig, t)
+
+	if err != nil {
+		t.Errorf("Login '%s': failed! Message: %#v", testAdmin.Login, err)
+	}
+
+	if token == "" {
+		t.Errorf("Login '%s': Token is empty!", testAdmin.Login)
+	}
+}
+
+func TestConfigEnableAdmin(t *testing.T) {
+	var appConfig config.AppConfig
+	var db *gorm.DB
+	var token string
+	var err error
+
+	gin.SetMode(gin.TestMode)
+
+	if appConfig, err = config.ReadConfigFile(); err != nil {
+		t.Fatalf("Application Configuration: Configuration is missing! Message: %#v", err)
+	}
+
+	if db, err = ConnectDatabase(&appConfig); err != nil {
+		t.Fatalf("Database Connection: Connection failed! Message: %#v", err)
+	}
+
+	//-------------------------------------
+	// Set Admin Account Config
+
+	// Reset Admin User ID
+	testAdmin.ID = 0
+
+	appConfig.Admin.Login = testAdmin.Login
+	appConfig.Admin.Email = testAdmin.Email
+	appConfig.Admin.Password = testAdmin.Password
+
+	//-------------------------------------
+	// Initialize Database
+
+	if err = InitializeDatabase(db, &appConfig); err != nil {
+		t.Fatalf("Database Setup: Setup failed! Message: %#v", err)
+	}
+
+	//-------------------------------------
+	// Check Admin Login
+
+	token, err = loginUser(gin.Default(), &testAdmin, &appConfig, t)
+
+	if err != nil {
+		t.Errorf("Login '%s': failed! Message: %#v", testAdmin.Login, err)
+	}
+
+	if token == "" {
+		t.Errorf("Login '%s': Token is empty!", testAdmin.Login)
+	}
+}
+
 func TestDisplayUsers(t *testing.T) {
 	var appConfig config.AppConfig
 	var db *gorm.DB
@@ -85,7 +228,7 @@ func TestDisplayUsers(t *testing.T) {
 		testAdmin.Password = model.EncryptPassword(testAdmin.Password, model.ENCRYPTIONSALT)
 	}
 
-	createRestoreUser(db, &testAdmin)
+	controllers.CreateRestoreUser(&testAdmin)
 
 	testAdmin.Password = loginPassword
 
@@ -234,7 +377,7 @@ func TestCreateUser(t *testing.T) {
 		testAdmin.Password = model.EncryptPassword(testAdmin.Password, model.ENCRYPTIONSALT)
 	}
 
-	createRestoreUser(db, &testAdmin)
+	controllers.CreateRestoreUser(&testAdmin)
 
 	testAdmin.Password = loginPassword
 
@@ -348,7 +491,7 @@ func TestUpdateUser(t *testing.T) {
 		testAdmin.Password = model.EncryptPassword(testAdmin.Password, model.ENCRYPTIONSALT)
 	}
 
-	createRestoreUser(db, &testAdmin)
+	controllers.CreateRestoreUser(&testAdmin)
 
 	testAdmin.Password = loginPassword
 
@@ -463,7 +606,7 @@ func TestDeleteUser(t *testing.T) {
 		testAdmin.Password = model.EncryptPassword(testAdmin.Password, model.ENCRYPTIONSALT)
 	}
 
-	createRestoreUser(db, &testAdmin)
+	controllers.CreateRestoreUser(&testAdmin)
 
 	testAdmin.Password = loginPassword
 
@@ -539,6 +682,7 @@ func TestDeleteUser(t *testing.T) {
 	db.Delete(&testAdmin, testAdmin.ID)
 }
 
+/*
 func createRestoreUser(db *gorm.DB, searchUser *model.User) {
 	var resUser *model.User
 	var err error
@@ -578,3 +722,4 @@ func createRestoreUser(db *gorm.DB, searchUser *model.User) {
 	// Update original with the fetched or created ID
 	searchUser.ID = resUser.ID
 }
+*/

@@ -68,7 +68,7 @@ func ConnectDatabase(config *config.AppConfig) (*gorm.DB, error) {
 	return db, err
 }
 
-func InitializeDatabase(db *gorm.DB) error {
+func InitializeDatabase(db *gorm.DB, config *config.AppConfig) error {
 
 	fmt.Println("InitializeDatabase() - go ...")
 
@@ -79,11 +79,23 @@ func InitializeDatabase(db *gorm.DB) error {
 		admin_user := os.Getenv("GINBLOG_ADMIN_USER")
 
 		if admin_user != "" {
+			config.Admin.Login = admin_user
+		}
+
+		if config.Admin.Login != "" {
 			admin_email := os.Getenv("GINBLOG_ADMIN_EMAIL")
 			admin_password := os.Getenv("GINBLOG_ADMIN_PASSWORD")
 
+			if admin_email != "" {
+				config.Admin.Email = admin_email
+			}
+
+			if admin_password != "" {
+				config.Admin.Password = admin_password
+			}
+
 			// Create Articles Structure
-			err = controllers.EnableAdminUser(admin_user, admin_email, admin_password)
+			err = controllers.EnableAdminUser(config.Admin.Login, config.Admin.Email, config.Admin.Password)
 		}
 	}
 
@@ -139,7 +151,7 @@ func Start() error {
 		return err
 	}
 
-	InitializeDatabase(db)
+	InitializeDatabase(db, &appConfig)
 
 	router := RegisterRoutes(&appConfig)
 

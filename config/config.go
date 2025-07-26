@@ -19,13 +19,23 @@ type (
 
 	// DBConfig - Structure for the Database Configuration
 	DBConfig struct {
-		Driver string `yaml:"driver"`
-		Host     string `yaml:"host"`
-		Protocol string `yaml:"protocol"`
-		Name     string `yaml:"name"`
-		User     string `yaml:"user"`
+		Driver   string            `yaml:"driver"`
+		Host     string            `yaml:"host"`
+		Protocol string            `yaml:"protocol"`
+		Name     string            `yaml:"name"`
+		User     string            `yaml:"user"`
+		Password string            `yaml:"password"`
+		Params   map[string]string `yaml:"params"`
+	}
+
+	//==========================================================================
+	// Structure DBConfig Declaration
+
+	// DBConfig - Structure for the Database Configuration
+	UserConfig struct {
+		Login    string `yaml:"user"`
+		Email    string `yaml:"email"`
 		Password string `yaml:"password"`
-		Params map[string]string `yaml:"params"`
 	}
 
 	//==========================================================================
@@ -33,14 +43,15 @@ type (
 
 	// AppConfig - Structure for the Application Configuration
 	AppConfig struct {
-		Component     string   `yaml:"component"`
-		Project       string   `yaml:"project"`
-		Description   string   `yaml:"description"`
-		WebRoot       string   `yaml:"web_root"`
-		MainDirectory string   `yaml:"main_directory"`
-		ConfigFile    string   `yaml:"config_file"`
-		Port		uint32	`yaml:"port"`
-		DB            DBConfig `yaml:"database"`
+		Component     string     `yaml:"component"`
+		Project       string     `yaml:"project"`
+		Description   string     `yaml:"description"`
+		WebRoot       string     `yaml:"web_root"`
+		MainDirectory string     `yaml:"main_directory"`
+		ConfigFile    string     `yaml:"config_file"`
+		Port          uint32     `yaml:"port"`
+		Admin         UserConfig `yaml:"admin"`
+		DB            DBConfig   `yaml:"database"`
 	}
 )
 

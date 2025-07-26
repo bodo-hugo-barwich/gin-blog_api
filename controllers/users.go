@@ -349,17 +349,19 @@ func CreateRestoreUser(searchUser *model.User) {
 			// Deleted account becomes new user
 			resUser = &restore
 
-			// Update existing account with new values
-			restore.Update(searchUser)
-
 			// Re-enable user account
 			DATABASE.Model(&restore).Unscoped().Where("id = ?", restore.ID).Update("deleted_at", nil)
-
-			// Save any updated fields
-			DATABASE.Save(&restore)
 		} else {
 			resUser = nil
 		}
+	}
+
+	if resUser != nil {
+		// Update existing account with new values
+		resUser.Update(searchUser)
+
+		// Save any updated fields
+		DATABASE.Save(&resUser)
 	}
 
 	if resUser == nil {

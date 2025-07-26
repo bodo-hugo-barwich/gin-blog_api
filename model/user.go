@@ -41,6 +41,16 @@ type (
 		Login    string `json:"login"`
 		Password string `json:"password"`
 	}
+
+	//==========================================================================
+	// Structure Login Declaration
+
+	// Login - Structure for the storing Login information
+	SetupUser struct {
+		Login    string `json:"login"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
 )
 
 var ENCRYPTIONSALT string = "gin-blog"
