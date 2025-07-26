@@ -85,6 +85,9 @@ func RegisterUserRoutes(engine *gin.Engine, config *config.AppConfig) {
 	engine.DELETE(config.WebRoot+"users/:id", AuthorizeRequest(), DeleteUser)
 }
 
+//==========================================================================
+// Handler Funtions
+
 func DisplayUser(c *gin.Context) {
 	var user *model.User
 	var userId uint64
@@ -306,6 +309,69 @@ func DeleteUser(c *gin.Context) {
 			message,
 		},
 	)
+}
+
+//==========================================================================
+// Auxilliary Funtions
+
+func EnableAdminUser(login, email, password string) error {
+	var admin model.User
+	var updated model.User = model.User{Name: login, Login: login, Email: email, Password: password}
+	var err error
+
+	// Populate the admin account with input data to encrypt the password if needed
+	admin.Update(&updated)
+
+	// Enable or create the account
+	CreateRestoreUser(&admin)
+
+	if admin.ID == 0 {
+		err = fmt.Errorf("Admin '%s / %s': User could not be created!", login, email)
+	}
+
+	return err
+}
+
+func CreateRestoreUser(searchUser *model.User) {
+	var resUser *model.User
+	var err error
+
+	if resUser, err = GetUserByLogin(searchUser.Login); resUser == nil || err != nil {
+		fmt.Printf("Login '%s / %s': Error: %#v\n", searchUser.Login, searchUser.Name, err)
+
+		var restore model.User
+
+		DATABASE.Unscoped().Where("login = ?", searchUser.Login).Where("deleted_at IS NOT NULL").Find(&restore)
+
+		fmt.Printf("Login '%s / %s': Restore: %#v\n", searchUser.Login, searchUser.Name, restore)
+
+		if restore.ID != 0 {
+			// Deleted account becomes new user
+			resUser = &restore
+
+			// Update existing account with new values
+			restore.Update(searchUser)
+
+			// Re-enable user account
+			DATABASE.Model(&restore).Unscoped().Where("id = ?", restore.ID).Update("deleted_at", nil)
+
+			// Save any updated fields
+			DATABASE.Save(&restore)
+		} else {
+			resUser = nil
+		}
+	}
+
+	if resUser == nil {
+		DATABASE.Create(searchUser)
+
+		fmt.Printf("Login '%s / %s': Created: %#v\n", searchUser.Login, searchUser.Name, searchUser)
+
+		resUser = searchUser
+	}
+
+	// Update original with the fetched or created ID
+	searchUser.ID = resUser.ID
 }
 
 func GetUserByID(userID uint) (*model.User, error) {

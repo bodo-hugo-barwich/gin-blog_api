@@ -76,6 +76,18 @@ func InitializeDatabase(db *gorm.DB) error {
 	err := controllers.MigrateUsers(db)
 
 	if err == nil {
+		admin_user := os.Getenv("GINBLOG_ADMIN_USER")
+
+		if admin_user != "" {
+			admin_email := os.Getenv("GINBLOG_ADMIN_EMAIL")
+			admin_password := os.Getenv("GINBLOG_ADMIN_PASSWORD")
+
+			// Create Articles Structure
+			err = controllers.EnableAdminUser(admin_user, admin_email, admin_password)
+		}
+	}
+
+	if err == nil {
 		// Create Articles Structure
 		err = controllers.MigrateArticles(db)
 	}
