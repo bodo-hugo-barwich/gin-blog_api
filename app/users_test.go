@@ -94,6 +94,53 @@ func TestEnableAdmin(t *testing.T) {
 	}
 }
 
+func TestConfigEnableAdmin(t *testing.T) {
+	var appConfig config.AppConfig
+	var db *gorm.DB
+	var token string
+	var err error
+
+	gin.SetMode(gin.TestMode)
+
+	if appConfig, err = config.ReadConfigFile(); err != nil {
+		t.Fatalf("Application Configuration: Configuration is missing! Message: %#v", err)
+	}
+
+	if db, err = ConnectDatabase(&appConfig); err != nil {
+		t.Fatalf("Database Connection: Connection failed! Message: %#v", err)
+	}
+
+	//-------------------------------------
+	// Set Admin Account Config
+
+	// Reset Admin User ID
+	testAdmin.ID = 0
+
+	appConfig.Admin.Login = testAdmin.Login
+	appConfig.Admin.Email = testAdmin.Email
+	appConfig.Admin.Password = testAdmin.Password
+
+	//-------------------------------------
+	// Initialize Database
+
+	if err = InitializeDatabase(db, &appConfig); err != nil {
+		t.Fatalf("Database Setup: Setup failed! Message: %#v", err)
+	}
+
+	//-------------------------------------
+	// Check Admin Login
+
+	token, err = loginUser(gin.Default(), &testAdmin, &appConfig, t)
+
+	if err != nil {
+		t.Errorf("Login '%s': failed! Message: %#v", testAdmin.Login, err)
+	}
+
+	if token == "" {
+		t.Errorf("Login '%s': Token is empty!", testAdmin.Login)
+	}
+}
+
 func TestEnvironmentEnableAdmin(t *testing.T) {
 	var appConfig config.AppConfig
 	var db *gorm.DB
@@ -123,53 +170,6 @@ func TestEnvironmentEnableAdmin(t *testing.T) {
 	appConfig.Admin.Login = ""
 	appConfig.Admin.Email = ""
 	appConfig.Admin.Password = ""
-
-	//-------------------------------------
-	// Initialize Database
-
-	if err = InitializeDatabase(db, &appConfig); err != nil {
-		t.Fatalf("Database Setup: Setup failed! Message: %#v", err)
-	}
-
-	//-------------------------------------
-	// Check Admin Login
-
-	token, err = loginUser(gin.Default(), &testAdmin, &appConfig, t)
-
-	if err != nil {
-		t.Errorf("Login '%s': failed! Message: %#v", testAdmin.Login, err)
-	}
-
-	if token == "" {
-		t.Errorf("Login '%s': Token is empty!", testAdmin.Login)
-	}
-}
-
-func TestConfigEnableAdmin(t *testing.T) {
-	var appConfig config.AppConfig
-	var db *gorm.DB
-	var token string
-	var err error
-
-	gin.SetMode(gin.TestMode)
-
-	if appConfig, err = config.ReadConfigFile(); err != nil {
-		t.Fatalf("Application Configuration: Configuration is missing! Message: %#v", err)
-	}
-
-	if db, err = ConnectDatabase(&appConfig); err != nil {
-		t.Fatalf("Database Connection: Connection failed! Message: %#v", err)
-	}
-
-	//-------------------------------------
-	// Set Admin Account Config
-
-	// Reset Admin User ID
-	testAdmin.ID = 0
-
-	appConfig.Admin.Login = testAdmin.Login
-	appConfig.Admin.Email = testAdmin.Email
-	appConfig.Admin.Password = testAdmin.Password
 
 	//-------------------------------------
 	// Initialize Database
