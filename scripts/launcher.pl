@@ -218,81 +218,64 @@ sub command_start {
 }
 
 sub command_status {
-    my %params   = @_;
-    my $pid_file = $params{log_directory}->child( $params{service_name} . '.pid' );
-    my $pid      = get_pid_from_file(
-        service_name  => $params{service_name},
-        log_directory => $params{log_directory},
-        file          => $pid_file,
-        debug         => $params{debug},
-        quiet         => $params{quiet}
-    );
-    my $check_pid = 0;
+    my ( $pid, $result ) = check_pid(@_);
+    my %params = @_;
 
-    if ( $pid != 0 ) {
-        my $daemon = Proc::Daemon->new( pid_file => $pid_file->stringify );
-
-        if ( $params{debug} && !$params{quiet} ) {
-            print "$params{service_name} check pid: '$pid'\n";
-        }
-
-        $check_pid = $daemon->Status($pid);
-
-        if ( $check_pid != 0 ) {
-            if ( !$params{quiet} ) {
-                print "Service '$params{service_name}' [PID: '$check_pid']: Service running.\n";
-            }
-        }
-        else {
-            if ( !$params{quiet} ) {
-                print "Service '$params{service_name}' [PID: '$pid']: Service Run failed!\n";
-            }
-
-            # Delete PID file of crashed service
-            $pid_file->remove;
+    # Service is running
+    if ( $result > 0 ) {
+        if ( !$params{quiet} ) {
+            print "Service '$params{service_name}' [PID: '$pid']: Service running.\n";
         }
     }
-    else {
-        if ( !$params{quiet} ) {
-            if ( $params{debug} ) {
-                print "$params{service_name} check pid: '$check_pid'\n";
-            }
 
+    # Service is stopped
+    elsif ( $result == 0 ) {
+        if ( !$params{quiet} ) {
             print "Service '$params{service_name}': Service not running.\n";
         }
 
-        $check_pid = 1;
+        $result = 1;
     }
 
-    return ( $check_pid != 0 ? 0 : 1 );
+    # Service is crashed
+    else {
+        if ( !$params{quiet} ) {
+            print "Service '$params{service_name}' [PID: '$pid']: Service Run failed!\n";
+        }
+    }
+
+    return ( $result != 0 ? 0 : 1 );
 }
 
 sub command_check {
+
+    # check_pid() returns a result is greater than 0 when the service is running,
+    # and removes a stale PID file when it crashed.
+    my ($pid, $result ) = check_pid(@_);
+
+    return 0 if $result > 0;    # still running, nothing to do
+
     my %params   = @_;
     my $log_file = $params{log_directory}->child( $params{service_name} . '.log' );
-
-    # command_status returns 0 when the service is running,
-    # and removes a stale PID file when it crashed.
-    my $status_code = command_status(
-        service_name  => $params{service_name},
-        log_directory => $params{log_directory},
-        debug         => $params{debug},
-        quiet         => $params{quiet}
-    );
-
-    return 0 if $status_code == 0;    # still running, nothing to do
-
     my $now = strftime '%F %H:%M:%S', localtime;
 
-    $log_file->append( $now . " - Service '$params{service_name}': Watchdog: service not running, relaunching ...\n" );
+    # Service is stopped
+    if ( $result == 0 ) {
+        if ( !$params{quiet} ) {
+            print "Service '$params{service_name}': Service not running.\n";
+        }
+    }
 
-    return command_start(
-        service_name  => $params{service_name},
-        directory     => $params{directory},
-        log_directory => $params{log_directory},
-        debug         => $params{debug},
-        quiet         => $params{quiet}
-    );
+    # Service is crashed
+    else {
+        if ( !$params{quiet} ) {
+            print "Service '$params{service_name}' [PID: '$pid']: Service Run failed!\n";
+        }
+    }
+
+    $log_file->append( $now . " - Service '$params{service_name}' [PID: '$pid']: Service not running! Relaunching ...\n" );
+
+    return command_start(@_);
 }
 
 sub command_stop {
@@ -349,6 +332,40 @@ sub command_stop {
     return ( $proc_count != 0 ? 0 : 1 );
 }
 
+sub check_pid {
+    my %params   = @_;
+    my $pid_file = $params{log_directory}->child( $params{service_name} . '.pid' );
+    my $pid      = get_pid_from_file(
+        service_name  => $params{service_name},
+        log_directory => $params{log_directory},
+        file          => $pid_file,
+        debug         => $params{debug},
+        quiet         => $params{quiet}
+    );
+    my $result = 0;
+
+    if ( $params{debug} && !$params{quiet} ) {
+        print "$params{service_name} check pid: '$pid'\n";
+    }
+
+    if ( $pid > 0 ) {
+        my $daemon = Proc::Daemon->new( pid_file => $pid_file->stringify );
+
+        $result = $daemon->Status($result);
+
+        if ( $result == 0 ) {
+
+            # Delete PID file of crashed service
+            $pid_file->remove;
+
+            # Mark Check as failed
+            $result = -1;
+        }
+    }
+
+    return ( $pid, $result );
+}
+
 sub get_pid_from_file {
     my %params   = @_;
     my $pid_file = $params{file};
@@ -368,8 +385,10 @@ sub get_pid_from_file {
     };
 
     if ($@) {
-        $pid = 0;
+        $pid = -1;
     }
+
+    $pid //= -1;
 
     return $pid;
 }
