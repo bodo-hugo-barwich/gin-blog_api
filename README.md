@@ -14,7 +14,7 @@ This API is meant to be consumed by a frontend to give it a graphical interface.
 
 # REQUIREMENTS
 
-To rebuild this web site the tested **Minimum Go Compiler Version** is _Go_ `1.19`.\
+To rebuild this web site the tested **Minimum Go Compiler Version** is _Go_ `1.25`.\
 The site uses the libraries `Gin`, `Gorm` and `golang-jwt`.\
 The _Gin_ Web Server uses the _Gorm_ framework for the database access.\
 At the moment only _PostgreSQL_ is supported as database backend.\

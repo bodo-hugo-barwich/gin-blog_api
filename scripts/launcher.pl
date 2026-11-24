@@ -185,7 +185,7 @@ sub command_start {
         exec_command => $params{directory}->child($executable)->realpath->stringify,
     );
 
-    my $now = strftime "%F %H:%M:%S", localtime;
+    my $now = strftime '%F %H:%M:%S', localtime;
 
     $log_file->append( $now . " - Service '$params{service_name}': Service launching ...\n" );
 
@@ -197,7 +197,7 @@ sub command_start {
 
     my $check_pid = $daemon->Status($pid);
 
-    $now = strftime "%F %H:%M:%S", localtime;
+    $now = strftime '%F %H:%M:%S', localtime;
 
     if ( $check_pid != 0 ) {
         $log_file->append( $now . " - Service '$params{service_name}' [PID: '$check_pid']: Service started.\n" );
@@ -282,7 +282,7 @@ sub command_check {
 
     return 0 if $status_code == 0;    # still running, nothing to do
 
-    my $now = strftime "%F %H:%M:%S", localtime;
+    my $now = strftime '%F %H:%M:%S', localtime;
 
     $log_file->append( $now . " - Service '$params{service_name}': Watchdog: service not running, relaunching ...\n" );
 
@@ -315,14 +315,14 @@ sub command_stop {
             print "$params{service_name} terminate pid: '$pid'\n";
         }
 
-        my $now = strftime "%F %H:%M:%S", localtime;
+        my $now = strftime '%F %H:%M:%S', localtime;
 
         $log_file->append( $now . " - Service '$params{service_name}' [PID: '$pid']: Service terminating ...\n" );
 
         # Terminate the service process
         $proc_count = $daemon->Kill_Daemon( $pid, 15 );
 
-        $now = strftime "%F %H:%M:%S", localtime;
+        $now = strftime '%F %H:%M:%S', localtime;
 
         $log_file->append( $now . " - Service '$params{service_name}' [PID: '$pid']: Service terminated.\n" );
 
@@ -380,10 +380,10 @@ sub rotate_logs {
     my $errors_file = $params{log_directory}->child( $params{service_name} . '_error.log' );
 
     my $now       = localtime;
-    my $file_time = strftime "%F_%H-%M-%S", $now;
+    my $file_time = strftime '%F_%H-%M-%S', $now;
 
     if ( $log_file->exists() && $log_file->size() > 0 ) {
-        my $log_time = strftime "%F %H:%M:%S", $now;
+        my $log_time = strftime '%F %H:%M:%S', $now;
 
         $log_file->append( $log_time . " - Service '$params{service_name}': Logs rotating ...\n" );
 
