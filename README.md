@@ -14,7 +14,7 @@ This API is meant to be consumed by a frontend to give it a graphical interface.
 
 # REQUIREMENTS
 
-To rebuild this web site the tested **Minimum Go Compiler Version** is _Go_ `1.26`.\
+To rebuild this web site the tested **Minimum Go Compiler Version** is _Go_ `1.26` (`1.26.10`).\
 Note that dependencies are pushing the minimum compiler version up.\
 The site uses the libraries `Gin`, `Gorm` and `golang-jwt`.\
 The _Gin_ Web Server uses the _Gorm_ framework for the database access.\
