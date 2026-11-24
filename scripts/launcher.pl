@@ -73,9 +73,9 @@ $command = $ARGV[0];
 
 if ( !defined $command ) {
     if ( !$quiet ) {
-        print STDERR "Command '$command': Command missing!\n";
+        print STDERR "Script '$module_name': Command missing!\n";
 
-        print q("Possible Commands:
+        print q(Possible Commands:
 - 'status':   Show Service Status
 - 'start':    Start Service
 - 'restart':  Restart Service
@@ -379,11 +379,11 @@ sub rotate_logs {
     my $log_file    = $params{log_directory}->child( $params{service_name} . '.log' );
     my $errors_file = $params{log_directory}->child( $params{service_name} . '_error.log' );
 
-    my $now       = localtime;
-    my $file_time = strftime '%F_%H-%M-%S', $now;
+    my @now       = localtime;
+    my $file_time = strftime( '%F_%H-%M-%S', @now );
 
     if ( $log_file->exists() && $log_file->size() > 0 ) {
-        my $log_time = strftime '%F %H:%M:%S', $now;
+        my $log_time = strftime( '%F %H:%M:%S', @now );
 
         $log_file->append( $log_time . " - Service '$params{service_name}': Logs rotating ...\n" );
 
