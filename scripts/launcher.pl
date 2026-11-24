@@ -24,10 +24,10 @@ my $debug         = 0;
 my $exit_code     = 0;
 
 GetOptions(
-    "directory|dir"         => \$directory,
-    "log_directory|log_dir" => \$log_directory,
-    "debug|d"               => \$debug,
-    "quiet|q"               => \$quiet
+    "directory|dir=s"         => \$directory,
+    "log_directory|log_dir=s" => \$log_directory,
+    "debug|d"                 => \$debug,
+    "quiet|q"                 => \$quiet
 );
 
 if ($debug) {
@@ -71,6 +71,29 @@ $service_name = $directory->child($executable)->basename;
 
 $command = $ARGV[0];
 
+if ( !defined $command ) {
+    if ( !$quiet ) {
+        print STDERR "Command '$command': Command missing!\n";
+
+        print q("Possible Commands:
+- 'status':   Show Service Status
+- 'start':    Start Service
+- 'restart':  Restart Service
+- 'stop':     Stop Service
+- 'check':    Relaunch Service If Stopped
+);
+    }
+
+    $exit_code = 1;
+
+    if ( $debug && !$quiet ) {
+        print "Script '$module_name': Script finishing with [$exit_code]\n";
+    }
+
+    # Exit with the exit code returned by the command
+    exit $exit_code;
+}
+
 if ($debug) {
     print "log dir: '" . $log_directory->stringify . "'\n";
     print "command: '$command'\n";
@@ -112,6 +135,15 @@ elsif ( $command eq 'status' ) {
         quiet         => $quiet
     );
 }
+elsif ( $command eq 'check' ) {
+    $exit_code = command_check(
+        service_name  => $service_name,
+        directory     => $directory,
+        log_directory => $log_directory,
+        debug         => $debug,
+        quiet         => $quiet
+    );
+}
 elsif ( $command eq 'stop' ) {
     $exit_code = command_stop(
         service_name  => $service_name,
@@ -139,32 +171,28 @@ exit $exit_code;
 
 sub command_start {
     my %params = @_;
-    my $log_file =
-      $params{log_directory}->child( $params{service_name} . '.log' );
+
+    # Rotate Logs before Service Start
+    rotate_logs(@_);
+
+    my $log_file = $params{log_directory}->child( $params{service_name} . '.log' );
 
     my $daemon = Proc::Daemon->new(
         work_dir     => $params{directory}->stringify,
         child_STDOUT => $log_file->stringify,
-        child_STDERR =>
-          $params{log_directory}->child( $params{service_name} . '_error.log' )
-          ->stringify,
-        pid_file =>
-          $params{log_directory}->child( $params{service_name} . '.pid' )
-          ->stringify,
-        exec_command =>
-          $params{directory}->child($executable)->realpath->stringify,
+        child_STDERR => $params{log_directory}->child( $params{service_name} . '_error.log' )->stringify,
+        pid_file     => $params{log_directory}->child( $params{service_name} . '.pid' )->stringify,
+        exec_command => $params{directory}->child($executable)->realpath->stringify,
     );
 
     my $now = strftime "%F %H:%M:%S", localtime;
 
-    $log_file->append(
-        $now . " - Service '$params{service_name}': Service launching ...\n" );
+    $log_file->append( $now . " - Service '$params{service_name}': Service launching ...\n" );
 
     my $pid = $daemon->Init();
 
     if ( !$params{quiet} ) {
-        print
-          "Service '$params{service_name}' [PID: '$pid']: Service launched.\n";
+        print "Service '$params{service_name}' [PID: '$pid']: Service launched.\n";
     }
 
     my $check_pid = $daemon->Status($pid);
@@ -172,23 +200,17 @@ sub command_start {
     $now = strftime "%F %H:%M:%S", localtime;
 
     if ( $check_pid != 0 ) {
-        $log_file->append( $now
-              . " - Service '$params{service_name}' [PID: '$check_pid']: Service started.\n"
-        );
+        $log_file->append( $now . " - Service '$params{service_name}' [PID: '$check_pid']: Service started.\n" );
 
         if ( !$params{quiet} ) {
-            print
-"Service '$params{service_name}' [PID: '$check_pid']: Service running.\n";
+            print "Service '$params{service_name}' [PID: '$check_pid']: Service running.\n";
         }
     }
     else {
-        $log_file->append( $now
-              . " - Service '$params{service_name}' [PID: '$pid']: Service Start failed!\n"
-        );
+        $log_file->append( $now . " - Service '$params{service_name}' [PID: '$pid']: Service Start failed!\n" );
 
         if ( !$params{quiet} ) {
-            print
-"Service '$params{service_name}' [PID: '$pid']: Service Start failed!\n";
+            print "Service '$params{service_name}' [PID: '$pid']: Service Start failed!\n";
         }
     }
 
@@ -196,10 +218,9 @@ sub command_start {
 }
 
 sub command_status {
-    my %params = @_;
-    my $pid_file =
-      $params{log_directory}->child( $params{service_name} . '.pid' );
-    my $pid = get_pid_from_file(
+    my %params   = @_;
+    my $pid_file = $params{log_directory}->child( $params{service_name} . '.pid' );
+    my $pid      = get_pid_from_file(
         service_name  => $params{service_name},
         log_directory => $params{log_directory},
         file          => $pid_file,
@@ -219,14 +240,12 @@ sub command_status {
 
         if ( $check_pid != 0 ) {
             if ( !$params{quiet} ) {
-                print
-"Service '$params{service_name}' [PID: '$check_pid']: Service running.\n";
+                print "Service '$params{service_name}' [PID: '$check_pid']: Service running.\n";
             }
         }
         else {
             if ( !$params{quiet} ) {
-                print
-"Service '$params{service_name}' [PID: '$pid']: Service Run failed!\n";
+                print "Service '$params{service_name}' [PID: '$pid']: Service Run failed!\n";
             }
 
             # Delete PID file of crashed service
@@ -248,13 +267,39 @@ sub command_status {
     return ( $check_pid != 0 ? 0 : 1 );
 }
 
+sub command_check {
+    my %params   = @_;
+    my $log_file = $params{log_directory}->child( $params{service_name} . '.log' );
+
+    # command_status returns 0 when the service is running,
+    # and removes a stale PID file when it crashed.
+    my $status_code = command_status(
+        service_name  => $params{service_name},
+        log_directory => $params{log_directory},
+        debug         => $params{debug},
+        quiet         => $params{quiet}
+    );
+
+    return 0 if $status_code == 0;    # still running, nothing to do
+
+    my $now = strftime "%F %H:%M:%S", localtime;
+
+    $log_file->append( $now . " - Service '$params{service_name}': Watchdog: service not running, relaunching ...\n" );
+
+    return command_start(
+        service_name  => $params{service_name},
+        directory     => $params{directory},
+        log_directory => $params{log_directory},
+        debug         => $params{debug},
+        quiet         => $params{quiet}
+    );
+}
+
 sub command_stop {
-    my %params = @_;
-    my $log_file =
-      $params{log_directory}->child( $params{service_name} . '.log' );
-    my $pid_file =
-      $params{log_directory}->child( $params{service_name} . '.pid' );
-    my $pid = get_pid_from_file(
+    my %params   = @_;
+    my $log_file = $params{log_directory}->child( $params{service_name} . '.log' );
+    my $pid_file = $params{log_directory}->child( $params{service_name} . '.pid' );
+    my $pid      = get_pid_from_file(
         service_name  => $params{service_name},
         log_directory => $params{log_directory},
         file          => $pid_file,
@@ -272,27 +317,21 @@ sub command_stop {
 
         my $now = strftime "%F %H:%M:%S", localtime;
 
-        $log_file->append( $now
-              . " - Service '$params{service_name}' [PID: '$pid']: Service terminating ...\n"
-        );
+        $log_file->append( $now . " - Service '$params{service_name}' [PID: '$pid']: Service terminating ...\n" );
 
         # Terminate the service process
         $proc_count = $daemon->Kill_Daemon( $pid, 15 );
 
         $now = strftime "%F %H:%M:%S", localtime;
 
-        $log_file->append( $now
-              . " - Service '$params{service_name}' [PID: '$pid']: Service terminated.\n"
-        );
+        $log_file->append( $now . " - Service '$params{service_name}' [PID: '$pid']: Service terminated.\n" );
 
         if ( !$params{quiet} ) {
             if ( $proc_count != 0 ) {
-                print
-"Service '$params{service_name}' [PID: '$pid']: Service terminated.\n";
+                print "Service '$params{service_name}' [PID: '$pid']: Service terminated.\n";
             }
             else {
-                print
-"Service '$params{service_name}' [PID: '$pid']: Service not found!\n";
+                print "Service '$params{service_name}' [PID: '$pid']: Service not found!\n";
             }
         }
 
@@ -314,8 +353,7 @@ sub get_pid_from_file {
     my %params   = @_;
     my $pid_file = $params{file};
 
-    $pid_file //=
-      $params{log_directory}->child( $params{service_name} . '.pid' );
+    $pid_file //= $params{log_directory}->child( $params{service_name} . '.pid' );
 
     my $pid = eval {
         my $file_slurp = $pid_file->slurp;
@@ -334,4 +372,29 @@ sub get_pid_from_file {
     }
 
     return $pid;
+}
+
+sub rotate_logs {
+    my %params      = @_;
+    my $log_file    = $params{log_directory}->child( $params{service_name} . '.log' );
+    my $errors_file = $params{log_directory}->child( $params{service_name} . '_error.log' );
+
+    my $now       = localtime;
+    my $file_time = strftime "%F_%H-%M-%S", $now;
+
+    if ( $log_file->exists() && $log_file->size() > 0 ) {
+        my $log_time = strftime "%F %H:%M:%S", $now;
+
+        $log_file->append( $log_time . " - Service '$params{service_name}': Logs rotating ...\n" );
+
+        $log_file->move(
+            $params{log_directory}->child( $params{service_name} . '_' . $file_time . '.log' )->stringify() );
+    }
+
+    if ( $errors_file->exists() && $errors_file->size() > 0 ) {
+        $errors_file->move(
+            $params{log_directory}->child( $params{service_name} . '_error_' . $file_time . '.log' )->stringify() );
+    }
+
+    return;
 }

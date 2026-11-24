@@ -3,6 +3,8 @@
 .pydevproject
 *.adoc
 Cargo.lock
+**/*.save
+**/*.tdy
 
 # Exclude Local Configurations
 docker-compose.yml
